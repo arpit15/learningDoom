@@ -56,11 +56,11 @@ class Environment(object):
         return next_state, reward, game_over
 
     def get_curr_state(self):
-        return self.game.get_state().image_buffer
+        return self.game.reset()
 
     def new_episode(self):
-        self.game.new_episode()
-        # self.game.reset()
+        # self.game.new_episode()
+        self.game.reset()
 
     def is_game_over(self):
         return self.game.is_episode_finished()

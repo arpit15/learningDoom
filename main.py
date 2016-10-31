@@ -22,6 +22,10 @@ from Environment import Environment
 import sys
 sys.dont_write_bytecode = True
 
+from timeit import timeit
+from pdb import set_trace
+
+resultDir = "/media/arpit/datadisk/private/10701/project/results/exp2/"
 image_height, image_width = 60, 80 #TODO: change to 72
 merged_model = []
 def display_state(state):
@@ -418,11 +422,13 @@ class Agent(object):
         return model
 
     def preprocess(self, state):
+        # print state.shape
+        # set_trace()
         # resize image and convert to greyscale
         if self.scale == 1:
             return np.mean(state,0)
         else:
-            state = scipy.misc.imresize(np.mean(state,0), self.scale)
+            state = scipy.misc.imresize(np.mean(state,2), self.scale)
             #state = np.lib.pad(state, ((6, 6), (0, 0)), 'constant', constant_values=(0)) #TODO: remove comment
             return state
 
@@ -1043,6 +1049,7 @@ class Entity(object):
             if i % self.snapshot_episodes == self.snapshot_episodes - 1:
                 for agent_idx, agent in enumerate(self.agents):
                     snapshot = 'agent' + str(agent_idx) + '_model_' + str(i + 1) + '.h5'
+                    snapshot = resultDir + snapshot
                     print(str(datetime.datetime.now()) + " >> saving snapshot to " + snapshot)
                     agent.target_network.save_weights(snapshot, overwrite=True)
 
@@ -1089,7 +1096,10 @@ def run_experiment(args):
     mean_q_over_all_episodes = []
     return_buffer = []
     mean_q_buffer = []
+    
+    start_time = timeit()
     for i in range(args["episodes"]):
+        
         agent.environment.new_episode()
         steps, curr_return, curr_Qs, loss = 0, 0, 0, 0
         game_over = False
@@ -1134,13 +1144,15 @@ def run_experiment(args):
         print("episode = " + str(i) + " steps = " + str(total_steps))
         print("epsilon = " + str(agent.epsilon) + " loss = " + str(loss))
         print("current_return = " + str(curr_return) + " average return = " + str(average_return))
-
+        
         # save snapshot of target network
         if i % args["snapshot_episodes"] == args["snapshot_episodes"] - 1:
             snapshot = 'model_' + str(i + 1) + '.h5'
+            snapshot = resultDir + snapshot
             print(str(datetime.datetime.now()) + " >> saving snapshot to " + snapshot)
             agent.target_network.save_weights(snapshot, overwrite=True)
 
+    print("time for this episode:"+str((timeit()-start_time)/args["episodes"]))
     agent.environment.game.close()
     return returns_over_all_episodes, mean_q_over_all_episodes
 

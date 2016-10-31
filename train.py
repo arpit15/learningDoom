@@ -1,9 +1,11 @@
 from Environment import Level
 from main import run_experiment, ExplorationPolicy, Algorithm, Mode, Architecture
+import matplotlib.pyplot as plt
+
 
 train_param = {
             "snapshot_episodes": 100,
-            "episodes": 50,
+            "episodes": 10000,
             "steps_per_episode": 400, # 4300 for deathmatch, 300 for health gathering
             "average_over_num_episodes": 50,
             "start_learning_after": 10,
