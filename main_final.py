@@ -51,13 +51,6 @@ class Mode(Enum):
     TEST = 2
     DISPLAY = 3
 
-class Level(Enum):
-    BASIC = "configs/basic.cfg"
-    HEALTH = "configs/health_gathering.cfg"
-    DEATHMATCH = "configs/deathmatch.cfg"
-    DEFEND = "configs/defend_the_center.cfg"
-    WAY_HOME = "configs/my_way_home.cfg"
-
 class Algorithm(Enum):
     DQN = 1
     DDQN = 2
@@ -81,42 +74,6 @@ class MaskedEmbedding(Embedding):
 
     def compute_mask(self, x, mask=None):
         return K.not_equal(x, self.mask_value)
-
-
-# class Environment(object):
-#     def __init__(self, level = Level.BASIC, combine_actions = False, visible = True):
-#         self.game = DoomGame()
-#         self.game.load_config(level.value)
-#         self.game.set_window_visible(visible)
-#         self.game.init()
-#         self.actions_num = self.game.get_available_buttons_size()
-#         self.combine_actions = combine_actions
-#         self.actions = []
-#         if self.combine_actions:
-#             for perm in it.product([False, True], repeat=self.actions_num):
-#                 self.actions.append(list(perm))
-#         else:
-#             for action in range(self.actions_num):
-#                 one_hot = [False] * self.actions_num
-#                 one_hot[action] = True
-#                 self.actions.append(one_hot)
-#         self.screen_width = self.game.get_screen_width()
-#         self.screen_height = self.game.get_screen_height()
-
-#     def step(self, action):
-#         reward = self.game.make_action(action)
-#         next_state = self.game.get_state().image_buffer
-#         game_over = self.game.is_episode_finished()
-#         return next_state, reward, game_over
-
-#     def get_curr_state(self):
-#         return self.game.get_state().image_buffer
-
-#     def new_episode(self):
-#         self.game.new_episode()
-
-#     def is_game_over(self):
-#         return self.game.is_episode_finished()
 
 
 class Agent(object):
@@ -1085,7 +1042,7 @@ def run_experiment(args):
                   epsilon_end=args["epsilon_end"],
                   epsilon_annealing_steps=args["epsilon_annealing_steps"],
                   architecture=args["architecture"],
-                  visible=False,
+                  visible=args["visible"],
                   max_action_sequence_length=args["max_action_sequence_length"])
 
     if (args["mode"] == Mode.TEST or args["mode"] == Mode.DISPLAY) and args["snapshot"] == '':
@@ -1120,11 +1077,12 @@ def run_experiment(args):
 
                 # slow down things so we can see what's happening
                 if args["mode"] == Mode.DISPLAY:
+                    agent.environment.show()
                     sleep(0.05)
 
                 if i > args["start_learning_after"] and args["mode"] == Mode.TRAIN and total_steps % args["steps_between_train"] == 0:
                     loss += agent.train()
-                    # print(">>>finished training after:"+str(total_steps))
+                    print(">>>finished training after:"+str(total_steps))
 
                 if game_over or steps > args["steps_per_episode"]:
                     break

@@ -3,9 +3,12 @@
 import gym
 from enum import Enum
 import itertools as it
+from time import sleep
 
 import sys
 sys.dont_write_bytecode = True
+
+from pdb import set_trace
 
 class Level(Enum):
 
@@ -27,7 +30,7 @@ class Environment(object):
         self.actions_num = len(self.game.allowed_actions)
         self.action_idx = self.game.allowed_actions
 
-        print self.actions_num, self.action_idx
+        # print self.actions_num, self.action_idx
 
         if self.combine_actions:
             for perm in it.product([False, True], repeat=self.actions_num):
@@ -42,6 +45,11 @@ class Environment(object):
         self.screen_width = self.game.screen_width
         self.screen_height = self.game.screen_height
 
+        if visible:
+            self.game.mode = 'normal'
+            
+    def show(self, close=False):
+        self.game.render()
 
     def remap_action(self, action):
         #transfer from predicted_action space to env.action_space
@@ -68,4 +76,26 @@ class Environment(object):
     def is_game_over(self):
         return self.game.is_episode_finished()
 
+    def sample_action(self):
+        return self.game.action_space.sample()
 
+
+if __name__ == "__main__":
+    
+    env = Environment(level = Level.DEATHMATCH, combine_actions = False, visible = True)
+    num_episode = 5
+    num_step = 50
+    
+    for i in range(num_episode):
+        print 'episode num:' + str(i+1)
+        env.new_episode()
+        for j in range(num_step):
+            env.show()
+            action =  env.sample_action()
+            ob, reward, done = env.step(action)
+            if done:
+                break
+            
+        sleep(2.0)
+
+    env.show(close=True)
