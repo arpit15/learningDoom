@@ -18,14 +18,14 @@ import itertools as it
 import datetime
 from enum import Enum
 
-from Environment import Environment
+from RestrictedEnvironment import Environment, Level
 import sys
 sys.dont_write_bytecode = True
 
 from timeit import timeit
 from pdb import set_trace
 
-resultDir = "/media/arpit/datadisk/private/10701/project/results/exp2/"
+resultDir = ""
 image_height, image_width = 60, 80 #TODO: change to 72
 merged_model = []
 def display_state(state):
@@ -51,12 +51,12 @@ class Mode(Enum):
     TEST = 2
     DISPLAY = 3
 
-class Level(Enum):
-    BASIC = "configs/basic.cfg"
-    HEALTH = "configs/health_gathering.cfg"
-    DEATHMATCH = "configs/deathmatch.cfg"
-    DEFEND = "configs/defend_the_center.cfg"
-    WAY_HOME = "configs/my_way_home.cfg"
+# class Level(Enum):
+#     BASIC = "configs/basic.cfg"
+#     HEALTH = "configs/health_gathering.cfg"
+#     DEATHMATCH = "configs/deathmatch.cfg"
+#     DEFEND = "configs/defend_the_center.cfg"
+#     WAY_HOME = "configs/my_way_home.cfg"
 
 class Algorithm(Enum):
     DQN = 1
@@ -144,6 +144,7 @@ class Agent(object):
 
         # initialization
         self.environment = Environment(level=level, combine_actions=combine_actions, visible=visible)
+        print 'evn created'
         self.memory = ExperienceReplay(max_memory=max_memory, prioritized=prioritized_experience, store_episodes=(max_action_sequence_length>1))
         self.preprocessed_curr = []
         self.win_count = 0
@@ -1063,6 +1064,7 @@ def run_experiment(args):
     :param args: a dictionary containing all the parameters for the run
     :return: lists of average returns and mean Q values
     """
+    print 'creating agent'
     agent = Agent(algorithm=args["algorithm"],
                   discount=args["discount"],
                   snapshot=args["snapshot"],
@@ -1099,7 +1101,7 @@ def run_experiment(args):
     
     start_time = timeit()
     for i in range(args["episodes"]):
-        
+        # print 'episode num:' + str(i+1)
         agent.environment.new_episode()
         steps, curr_return, curr_Qs, loss = 0, 0, 0, 0
         game_over = False
@@ -1249,8 +1251,8 @@ if __name__ == "__main__":
         }
 
         egreedy = {
-            "snapshot_episodes": 100,
-            "episodes": 400,
+            "snapshot_episodes": 1000,
+            "episodes": 10000,
             "steps_per_episode": 40, # 4300 for deathmatch, 300 for health gathering
             "average_over_num_episodes": 50,
             "start_learning_after": 20,
@@ -1260,7 +1262,7 @@ if __name__ == "__main__":
             "prioritized_experience": False,
             "exploration_policy": ExplorationPolicy.E_GREEDY,
             "learning_rate": 2.5e-4,
-            "level": Level.BASIC,
+            "level": Level.WAY_HOME,
             "combine_actions": True,
             "temperature": 10,
             "batch_size": 10,
@@ -1306,7 +1308,7 @@ if __name__ == "__main__":
             "max_action_sequence_length": 5
         }
 
-        runs = [lstm]
+        runs = [egreedy]
 
         colors = ["r", "g", "b"]
         for color, run in zip(colors, runs):
@@ -1316,12 +1318,14 @@ if __name__ == "__main__":
             # plot results
             plt.figure(1)
             plt.plot(range(len(returns)), returns, color)
+            plt.savefig('av_return_10k.png')
             plt.xlabel("episode")
             plt.ylabel("average return")
             plt.title("Average Return")
 
             plt.figure(2)
             plt.plot(range(len(Qs)), Qs, color)
+            plt.savefig('av_q_10k.png')    
             plt.xlabel("episode")
             plt.ylabel("mean Q value")
             plt.title("Mean Q Value")

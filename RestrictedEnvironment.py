@@ -2,15 +2,12 @@
 
 import gym
 from enum import Enum
+import itertools as it
+
 import sys
 sys.dont_write_bytecode = True
 
 class Level(Enum):
-    # BASIC = "configs/basic.cfg"
-    # HEALTH = "configs/health_gathering.cfg"
-    # DEATHMATCH = "configs/deathmatch.cfg"
-    # DEFEND = "configs/defend_the_center.cfg"
-    # WAY_HOME = "configs/my_way_home.cfg"
 
     BASIC = "DoomBasic-v0"
     HEALTH = "DoomHealthGathering-v0"
@@ -21,16 +18,16 @@ class Level(Enum):
 class Environment(object):
     def __init__(self, level = Level.BASIC, combine_actions = False, visible = True):
         
-        # self.game = DoomGame()
-        # self.game.load_config(level.value)
-        # self.game.set_window_visible(visible)
-        # self.game.init()
-        # self.actions_num = self.game.get_available_buttons_size()
         self.combine_actions = combine_actions
         self.actions = []
 
         self.game = gym.make(level.value)
-        self.actions_num = self.game.action_space.shape
+        self.game.reset()
+
+        self.actions_num = len(self.game.allowed_actions)
+        self.action_idx = self.game.allowed_actions
+
+        print self.actions_num, self.action_idx
 
         if self.combine_actions:
             for perm in it.product([False, True], repeat=self.actions_num):
@@ -40,26 +37,32 @@ class Environment(object):
                 one_hot = [False] * self.actions_num
                 one_hot[action] = True
                 self.actions.append(one_hot)
-        # self.screen_width = self.game.get_screen_width()
-        # self.screen_height = self.game.get_screen_height()
 
+        print 'actions combined'
         self.screen_width = self.game.screen_width
         self.screen_height = self.game.screen_height
 
+
+    def remap_action(self, action):
+        #transfer from predicted_action space to env.action_space
+        remapped_action = [0]*self.game.action_space.shape
+        for i in range(self.actions_num):
+            remapped_action[self.action_idx[i]] = 1*action[i]
+
+        return remapped_action
+
     def step(self, action):
-        # reward = self.game.make_action(action)
-        # next_state = self.game.get_state().image_buffer
-        # game_over = self.game.is_episode_finished()
-
-        next_state, reward, game_over, _ = self.game.step(action)
-
+        remapped_action = self.remap_action(action)
+        # print remapped_action
+        next_state, reward, game_over, _ = self.game.step(remapped_action)
         return next_state, reward, game_over
 
     def get_curr_state(self):
-        return self.game.reset()
+        action = [0]*self.game.action_space.shape
+        curr_state, _, _, _ = self.game.step(action)
+        return curr_state
 
     def new_episode(self):
-        # self.game.new_episode()
         self.game.reset()
 
     def is_game_over(self):
