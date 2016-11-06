@@ -30,7 +30,7 @@ class Environment(object):
         self.actions_num = len(self.game.allowed_actions)
         self.action_idx = self.game.allowed_actions
 
-        # print self.actions_num, self.action_idx
+        print self.actions_num, self.action_idx
 
         if self.combine_actions:
             for perm in it.product([False, True], repeat=self.actions_num):

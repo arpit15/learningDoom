@@ -2,3 +2,7 @@ existing codes repo link
 ------------------------
 1) https://github.com/itaicaspi/keras-dqn-doom
 2) 
+
+datasets
+--------
+1) http://www.robots.ox.ac.uk/~vgg/research/researchdoom/
