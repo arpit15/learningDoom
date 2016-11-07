@@ -15,12 +15,12 @@ train_param = {
             "prioritized_experience": False,
             "exploration_policy": ExplorationPolicy.E_GREEDY,
             "learning_rate": 2.5e-4,
-            "level": Level.DEATHMATCH,        # change to the desired env
-            "combine_actions": False,      # False only for Deathmatch
+            "level": Level.DEFEND,        # change to the desired env
+            "combine_actions": True,      # False only for Deathmatch
             "temperature": 10,
             "batch_size": 10,
             "history_length": 4,
-            "snapshot":'exp10.h5',         # h5 model file name
+            "snapshot":'exp6.h5',         # h5 model file name
             "snapshot_itr_num": 10000,
             "mode": Mode.DISPLAY,
             "skipped_frames": 4,
@@ -43,20 +43,20 @@ train_param = {
 returns, Qs = run_experiment(train_param)
 
 # plot results
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
-# plt.figure(1)
-# plt.plot(range(len(returns)), returns)
-# plt.savefig(result_dir + 'av_return_10k.png')
-# plt.xlabel("episode")
-# plt.ylabel("average return")
-# plt.title("Average Return")
+plt.figure(1)
+plt.plot(range(len(returns)), returns)
+plt.savefig('av_return_10k.png')
+plt.xlabel("episode")
+plt.ylabel("average return")
+plt.title("Average Return")
 
-# plt.figure(2)
-# plt.plot(range(len(Qs)), Qs)
-# plt.savefig(result_dir + 'av_q_10k.png')
-# plt.xlabel("episode")
-# plt.ylabel("mean Q value")
-# plt.title("Mean Q Value")
+plt.figure(2)
+plt.plot(range(len(Qs)), Qs)
+plt.savefig('av_q_10k.png')
+plt.xlabel("episode")
+plt.ylabel("mean Q value")
+plt.title("Mean Q Value")
 
-# plt.show()
+plt.show()

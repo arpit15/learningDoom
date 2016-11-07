@@ -1,3 +1,6 @@
+#results
+*.png
+
 # vizdoom
 vizdoom.ini
 

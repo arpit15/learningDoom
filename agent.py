@@ -669,3 +669,103 @@ class Agent(object):
 
 
 
+if __name__ == "__main__":
+    from RestrictedEnvironment import Level
+    import numpy as np
+    params = {
+            "snapshot_episodes": 100,
+            "episodes": 5,
+            "steps_per_episode": 4300, # 4300 for deathmatch, 300 for health gathering
+            "average_over_num_episodes": 50,
+            "start_learning_after": 20,
+            "algorithm": Algorithm.DDQN,
+            "discount": 0.99,
+            "max_memory": 50000,
+            "prioritized_experience": True,
+            "exploration_policy": ExplorationPolicy.E_GREEDY,
+            "learning_rate": 2.5e-4,
+            "level": Level.DEATHMATCH,
+            "combine_actions": False,
+            "temperature": 10,
+            "batch_size": 32,
+            "history_length": 4,
+            "snapshot": '',#result_dir + 'model_20.h5',
+            "snapshot_itr_num": 0,
+            "mode": Mode.DISPLAY,
+            "skipped_frames": 4,
+            "target_update_freq": 1000,
+            "steps_between_train": 1,
+            "epsilon_start": 0.5,
+            "epsilon_end": 0.01,
+            "epsilon_annealing_steps": 3e4,
+            "architecture": Architecture.DIRECT,
+            "max_action_sequence_length": 1,
+            "save_results_dir": '',
+            "visible": True
+        }
+    agent = Agent(algorithm=params["algorithm"],
+                  discount=params["discount"],
+                  snapshot=params["snapshot"],
+                  max_memory=params["max_memory"],
+                  prioritized_experience=params["prioritized_experience"],
+                  exploration_policy=params["exploration_policy"],
+                  learning_rate=params["learning_rate"],
+                  level=params["level"],
+                  history_length=params["history_length"],
+                  batch_size=params["batch_size"],
+                  temperature=params["temperature"],
+                  combine_actions=params["combine_actions"],
+                  train=(params["mode"] == Mode.TRAIN),
+                  skipped_frames=params["skipped_frames"],
+                  target_update_freq=params["target_update_freq"],
+                  epsilon_start=params["epsilon_start"],
+                  epsilon_end=params["epsilon_end"],
+                  epsilon_annealing_steps=params["epsilon_annealing_steps"],
+                  architecture=params["architecture"],
+                  visible=params["visible"],
+                  max_action_sequence_length=params["max_action_sequence_length"])
+
+    model = agent.target_network
+    
+    #visualizing the conv filters
+    conv_layer = 5
+    # for l in range(conv_layer):
+    #     l1 = model.layers[l].get_weights()
+    #     w1 = np.asarray(l1[0])
+        
+    #     f, axarr = plt.subplots(4,4)
+    #     for i in range(4):
+    #         for j in range(4):
+    #             axarr[i,j].imshow(np.squeeze(w1[i,j,:,:]), cmap='Greys_r')
+
+    #     plt.savefig("layer_" + str(l) + ".png", bbox_inches="tight")
+
+
+    #visualizing the output of the conv filters
+    agent.predict()
+    preprocessed_curr = np.reshape(agent.preprocessed_curr, (1, agent.history_length, agent.state_height, agent.state_width))
+    input_image = preprocessed_curr
+    for l in range(conv_layer):
+        get_lth_layer_output = K.function([model.layers[l].input],
+                                  [model.layers[l].output])
+    
+        layer_output = get_lth_layer_output([input_image,0])[0]
+        out = np.squeeze(layer_output)
+        # if l ==0:
+        m = int(min(4,layer_output.shape[1]/4.0))
+        # else:
+        #     m = int(min(4,layer_output.shape[0]/4.0))
+        print m           
+        f, axarr = plt.subplots(4,m)
+        
+        for i in range(4):
+            for j in range(4):
+                axarr[i,j].imshow(np.squeeze(out[i+j*4,:,:]), cmap='Greys_r')
+
+        plt.savefig("layer_output_" + str(l) + ".png", bbox_inches="tight")
+
+        input_image = layer_output
+
+
+
+    
