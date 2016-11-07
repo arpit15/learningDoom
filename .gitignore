@@ -1,5 +1,6 @@
 #results
 *.png
+*.gif
 
 # vizdoom
 vizdoom.ini
