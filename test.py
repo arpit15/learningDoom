@@ -20,7 +20,7 @@ train_param = {
             "temperature": 10,
             "batch_size": 10,
             "history_length": 4,
-            "snapshot":'exp10.h5',         # h5 model file name
+            "snapshot": result_dir + 'exp10/models/model_10000.h5',         # h5 model file name
             "snapshot_itr_num": 10000,
             "mode": Mode.DISPLAY,
             "skipped_frames": 4,

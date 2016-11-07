@@ -38,7 +38,7 @@ class Agent(object):
                  architecture=Architecture.DIRECT, max_action_sequence_length=1):
 
         self.trainable = train
-
+        self.visible = visible
         # e-greedy policy
         self.epsilon_annealing_steps = epsilon_annealing_steps #steps
         self.epsilon_start = epsilon_start
@@ -606,7 +606,8 @@ class Agent(object):
         del preprocessed_next[0]
         for t in range(self.skipped_frames):
             frame, r, game_over = self.environment.step(action)
-            self.environment.show()
+            if self.visible:
+                self.environment.show()
             reward += r # reward is accumulated
             if game_over:
                 break

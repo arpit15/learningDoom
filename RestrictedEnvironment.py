@@ -1,5 +1,3 @@
-#author: Arpit Agarwal
-
 import gym
 from enum import Enum
 import itertools as it
