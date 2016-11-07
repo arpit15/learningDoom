@@ -1,3 +1,5 @@
+adapted from Itai Caspi
+
 # learningDoom
 To learn to play doom 
 

@@ -3,6 +3,9 @@ import datetime
 from agent import Agent
 from config import Mode
 from timeit import timeit
+# import matplotlib.pyplot as plt
+
+# from pdb import set_trace
 
 def run_experiment(args):
     """ Run a single experiment, either train, test or display of an agent
@@ -47,6 +50,21 @@ def run_experiment(args):
     mean_q_buffer = []
     
     start_time = timeit()
+    
+    #plotting init
+    # plt.ion()
+    # f, axarr = plt.subplots(2, sharex=True)
+    # plt.xlim([1,args["episodes"]])
+    # axarr[0].set_title("Training performance")
+    # axarr[0].set_ylabel('Average Return')
+    # axarr[0].set_xlabel("episode")
+    # axarr[1].set_ylabel('Average Q value')
+    # axarr[1].set_xlabel("episode")
+    # plt.draw()
+    # plt.savefig('alldone.png', dpi=300)
+    # set_trace()
+    # axarr[0].plot(range(10000), range(10000))
+
     for i in range(args["episodes"]):
         
         agent.environment.new_episode()
@@ -66,7 +84,7 @@ def run_experiment(args):
 
                 if i > args["start_learning_after"] and args["mode"] == Mode.TRAIN and total_steps % args["steps_between_train"] == 0:
                     loss += agent.train()
-                    print(">>>finished training after:"+str(total_steps))
+                    # print(">>>finished training after:"+str(total_steps))
 
                 if game_over or steps > args["steps_per_episode"]:
                     break
@@ -97,6 +115,15 @@ def run_experiment(args):
             snapshot = resultDir + snapshot
             print(str(datetime.datetime.now()) + " >> saving snapshot to " + snapshot)
             agent.target_network.save_weights(snapshot, overwrite=True)
+
+
+        #plotting
+        # print("plotting")
+        # axarr[0].plot(range(len(returns_over_all_episodes)), returns_over_all_episodes)
+        # axarr[1].plot(range(len(mean_q_over_all_episodes)), mean_q_over_all_episodes)
+        # plt.show()
+        # plt.savefig('alldone.png', dpi=300)
+
 
     print("time for this episode:"+str((timeit()-start_time)/args["episodes"]))
     agent.environment.game.close()

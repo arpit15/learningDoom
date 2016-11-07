@@ -1,24 +1,25 @@
-from Environment import Level
-from main_final import run_experiment, ExplorationPolicy, Algorithm, Mode, Architecture
-import matplotlib.pyplot as plt
+from RestrictedEnvironment import Level
+from run import run_experiment
+from config import *
+# import matplotlib.pyplot as plt
 
 result_dir = "/media/arpit/datadisk/private/10701/project/results/exp11/"
 train_param = {
             "snapshot_episodes": 100,
-            "episodes": 10000,
+            "episodes": 2500,
             "steps_per_episode": 4300, # 4300 for deathmatch, 300 for health gathering
             "average_over_num_episodes": 50,
             "start_learning_after": 20,
             "algorithm": Algorithm.DDQN,
             "discount": 0.99,
             "max_memory": 50000,
-            "prioritized_experience": True,
+            "prioritized_experience": False,
             "exploration_policy": ExplorationPolicy.E_GREEDY,
             "learning_rate": 2.5e-4,
             "level": Level.DEATHMATCH,
             "combine_actions": False,
             "temperature": 10,
-            "batch_size": 32,
+            "batch_size": 64,
             "history_length": 4,
             "snapshot": '',#result_dir + 'model_20.h5',
             "snapshot_itr_num": 0,
@@ -31,7 +32,9 @@ train_param = {
             "epsilon_annealing_steps": 3e4,
             "architecture": Architecture.DIRECT,
             "max_action_sequence_length": 1,
-            "save_results_dir": result_dir
+            "save_results_dir": result_dir,
+            "visible": False,                   #to run the frame in normal mode and visualize
+            "save_ERM": ''                      # give path if want to store memory
         }
 
 
