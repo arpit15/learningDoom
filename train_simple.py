@@ -1,7 +1,6 @@
-from Environment import Level
-from main_final import run_experiment, ExplorationPolicy, Algorithm, Mode, Architecture
-import matplotlib.pyplot as plt
-
+from RestrictedEnvironment import Level
+from run import run_experiment
+from config import *
 
 # train_param = {
 #             "snapshot_episodes": 100,
@@ -34,9 +33,10 @@ import matplotlib.pyplot as plt
             
 #         }
 
+result_dir = "/media/arpit/datadisk/private/10701/project/results/"
 train_param = {
-            "snapshot_episodes": 1000,
-            "episodes": 10000,
+            "snapshot_episodes": 500,
+            "episodes": 1000,
             "steps_per_episode": 40, # 4300 for deathmatch, 300 for health gathering
             "average_over_num_episodes": 50,
             "start_learning_after": 20,
@@ -44,7 +44,7 @@ train_param = {
             "discount": 0.99,
             "max_memory": 5000,
             "prioritized_experience": False,
-            "exploration_policy": ExplorationPolicy.E_GREEDY,
+            "exploration_policy": ExplorationPolicy.SHIFTED_MULTINOMIAL,
             "learning_rate": 2.5e-4,
             "level": Level.BASIC,
             "combine_actions": True,
@@ -62,7 +62,9 @@ train_param = {
             "epsilon_annealing_steps": 3e4,
             "architecture": Architecture.DIRECT,
             "max_action_sequence_length": 1,
-            "save_results_dir": "/media/arpit/datadisk/private/10701/project/results/exp8/"
+            "save_results_dir": result_dir + "exp12/",
+            "visible": False,
+            "save_ERM":""
         }
 
 
@@ -70,16 +72,17 @@ train_param = {
 returns, Qs = run_experiment(train_param)
 
 # plot results
-plt.figure(1)
-plt.plot(range(len(returns)), returns)
-plt.xlabel("episode")
-plt.ylabel("average return")
-plt.title("Average Return")
+# import matplotlib.pyplot as plt
+# plt.figure(1)
+# plt.plot(range(len(returns)), returns)
+# plt.xlabel("episode")
+# plt.ylabel("average return")
+# plt.title("Average Return")
 
-plt.figure(2)
-plt.plot(range(len(Qs)), Qs)
-plt.xlabel("episode")
-plt.ylabel("mean Q value")
-plt.title("Mean Q Value")
+# plt.figure(2)
+# plt.plot(range(len(Qs)), Qs)
+# plt.xlabel("episode")
+# plt.ylabel("mean Q value")
+# plt.title("Mean Q Value")
 
-plt.show()
+# plt.show()
