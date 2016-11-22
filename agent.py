@@ -690,7 +690,7 @@ if __name__ == "__main__":
             "temperature": 10,
             "batch_size": 32,
             "history_length": 4,
-            "snapshot": '',#result_dir + 'model_20.h5',
+            "snapshot": 'exp10.h5',#result_dir + 'model_20.h5',
             "snapshot_itr_num": 0,
             "mode": Mode.DISPLAY,
             "skipped_frames": 4,
@@ -742,30 +742,46 @@ if __name__ == "__main__":
     #     plt.savefig("layer_" + str(l) + ".png", bbox_inches="tight")
 
 
+    #run for some steps
+    for i in range(80):
+        actions, action_idxs, mean_Q = agent.predict()
+        for action, action_idx in zip(actions, action_idxs):
+            action_idx = int(action_idx)
+            next_state, reward, game_over = agent.step(action, action_idx)
+            agent.environment.show()
+
     #visualizing the output of the conv filters
     agent.predict()
     preprocessed_curr = np.reshape(agent.preprocessed_curr, (1, agent.history_length, agent.state_height, agent.state_width))
-    input_image = preprocessed_curr
+    input_image = np.copy(preprocessed_curr)
+    input_image = input_image.astype(np.float32)
+    f, axarr = plt.subplots(1,4)
+    
+    # plotting input image
+    for j in range(4):
+       axarr[j].imshow(np.squeeze(input_image[0,j,:,:]), cmap='Greys_r')
+       axarr[j].set_axis_off()
+    plt.show()
+
+    # plotting conv layer output
     for l in range(conv_layer):
         get_lth_layer_output = K.function([model.layers[l].input],
                                   [model.layers[l].output])
     
         layer_output = get_lth_layer_output([input_image,0])[0]
         out = np.squeeze(layer_output)
-        # if l ==0:
+        # set_trace()
         m = int(min(4,layer_output.shape[1]/4.0))
-        # else:
-        #     m = int(min(4,layer_output.shape[0]/4.0))
-        print m           
         f, axarr = plt.subplots(4,m)
         
         for i in range(4):
             for j in range(4):
+                axarr[i,j].set_axis_off()
                 axarr[i,j].imshow(np.squeeze(out[i+j*4,:,:]), cmap='Greys_r')
 
         plt.savefig("layer_output_" + str(l) + ".png", bbox_inches="tight")
 
-        input_image = layer_output
+        input_image = np.copy(layer_output)
 
 
 
