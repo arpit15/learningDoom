@@ -3,11 +3,11 @@ from run import run_experiment
 from config import *
 # import matplotlib.pyplot as plt
 
-result_dir = "/media/arpit/datadisk/private/10701/project/results/exp11/"
+result_dir = "/media/arpit/datadisk/private/10701/project/results/exp13/"
 train_param = {
             "snapshot_episodes": 100,
             "episodes": 2500,
-            "steps_per_episode": 4300, # 4300 for deathmatch, 300 for health gathering
+            "steps_per_episode": 700, # 700 for deathmatch, 300 for health gathering
             "average_over_num_episodes": 50,
             "start_learning_after": 20,
             "algorithm": Algorithm.DDQN,

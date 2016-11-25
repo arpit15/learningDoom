@@ -473,6 +473,7 @@ class Agent(object):
         :return: the action and the action index
         """
         # compute thresholds and choose a random number
+        print Q
         exp_Q = np.array(np.exp(Q/float(self.temperature)), copy=True)
         prob = np.random.rand(1)
         importances = [action_value/float(np.sum(exp_Q)) for action_value in exp_Q]
@@ -676,7 +677,7 @@ if __name__ == "__main__":
     params = {
             "snapshot_episodes": 100,
             "episodes": 5,
-            "steps_per_episode": 4300, # 4300 for deathmatch, 300 for health gathering
+            "steps_per_episode": 300, # 4300 for deathmatch, 300 for health gathering
             "average_over_num_episodes": 50,
             "start_learning_after": 20,
             "algorithm": Algorithm.DDQN,
@@ -685,12 +686,12 @@ if __name__ == "__main__":
             "prioritized_experience": True,
             "exploration_policy": ExplorationPolicy.E_GREEDY,
             "learning_rate": 2.5e-4,
-            "level": Level.DEATHMATCH,
+            "level": Level.HEALTH,
             "combine_actions": False,
             "temperature": 10,
             "batch_size": 32,
             "history_length": 4,
-            "snapshot": 'exp10.h5',#result_dir + 'model_20.h5',
+            "snapshot": 'exp8_5000.h5',#result_dir + 'model_20.h5',
             "snapshot_itr_num": 0,
             "mode": Mode.DISPLAY,
             "skipped_frames": 4,
@@ -730,17 +731,17 @@ if __name__ == "__main__":
     
     #visualizing the conv filters
     conv_layer = 5
-    # for l in range(conv_layer):
-    #     l1 = model.layers[l].get_weights()
-    #     w1 = np.asarray(l1[0])
+    for l in range(conv_layer):
+        l1 = model.layers[l].get_weights()
+        w1 = np.asarray(l1[0])
         
-    #     f, axarr = plt.subplots(4,4)
-    #     for i in range(4):
-    #         for j in range(4):
-    #             axarr[i,j].imshow(np.squeeze(w1[i,j,:,:]), cmap='Greys_r')
+        f, axarr = plt.subplots(4,4)
+        for i in range(4):
+            for j in range(4):
+                axarr[i,j].imshow(np.squeeze(w1[i,j,:,:]), cmap='Greys_r')
 
     #     plt.savefig("layer_" + str(l) + ".png", bbox_inches="tight")
-
+    set_trace()
 
     #run for some steps
     for i in range(80):

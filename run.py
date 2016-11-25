@@ -75,6 +75,7 @@ def run_experiment(args):
             actions, action_idxs, mean_Q = agent.predict()
             for action, action_idx in zip(actions, action_idxs):
                 action_idx = int(action_idx)
+                print action
                 next_state, reward, game_over = agent.step(action, action_idx)
                 agent.store_next_state(next_state, reward, game_over, action_idx)
                 steps += 1
