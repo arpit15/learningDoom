@@ -152,7 +152,7 @@ def run_experiment(args):
     if args["save_ERM"] != '':
         agent.memory.save(args["save_ERM"])    
         print 'saving ERM'
-    return returns_over_all_episodes, mean_q_over_all_episodes
+    return returns_over_all_episodes, mean_q_over_all_episodes ,agent.memory
 
 
 # if __name__ == "__main__":

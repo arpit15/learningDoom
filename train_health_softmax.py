@@ -1,13 +1,8 @@
 from RestrictedEnvironment import Level
 from run import run_experiment
 from config import *
-<<<<<<< HEAD
-
-resultDir = "/media/arpit/datadisk/private/10701/project/results/exp8/"
-=======
 import matplotlib.pyplot as plt
 
->>>>>>> bc5195b397a76b59be4d2f0bc9f12115e4fbe61c
 train_param = {
             "snapshot_episodes": 100,
             "episodes": 10000,
@@ -18,12 +13,12 @@ train_param = {
             "discount": 0.99,
             "max_memory": 5000,
             "prioritized_experience": False,
-            "exploration_policy": ExplorationPolicy.E_GREEDY,
+            "exploration_policy": ExplorationPolicy.SOFTMAX,
             "learning_rate": 2.5e-4,
             "level": Level.HEALTH,
             "combine_actions": False,
             "temperature": 10,
-            "batch_size": 64,
+            "batch_size": 32,
             "history_length": 4,
             "snapshot": '',
             "snapshot_itr_num": 0,
@@ -33,24 +28,18 @@ train_param = {
             "steps_between_train": 1,
             "epsilon_start": 0.5,
             "epsilon_end": 0.01,
-            "epsilon_annealing_steps": 3e4,
+            "epsilon_annealing_steps": 3e4,   # change to 1e4
             "architecture": Architecture.DIRECT,
             "max_action_sequence_length": 1,
-<<<<<<< HEAD
-            "log_dir":"../",
-            "visible":False,
-            "save_results_dir":'../' 
-=======
-            "save_results_dir": "/media/arpit/datadisk/private/10701/project/results/exp13/",
+            "save_results_dir": "/media/arpit/datadisk/private/10701/project/results/exp14/",
             "visible":False,
             "save_ERM":"./"
->>>>>>> bc5195b397a76b59be4d2f0bc9f12115e4fbe61c
         }
 
 
 
 # run agent
-returns, Qs, memory = run_experiment(train_param)
+returns, Qs = run_experiment(train_param)
 
 # plot results
 plt.figure(1)
