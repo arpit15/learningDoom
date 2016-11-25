@@ -525,7 +525,7 @@ class Agent(object):
         return action, action_idx
 
     def get_action_according_to_exploration_policy(self, Q):
-        action, action_idx = self.environment.actions[0], 0
+        # action, action_idx = self.environment.actions[0], 0
         if self.policy == ExplorationPolicy.E_GREEDY:
             action, action_idx = self.e_greedy(Q)
         elif self.policy == ExplorationPolicy.SHIFTED_MULTINOMIAL:

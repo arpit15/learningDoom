@@ -3,6 +3,7 @@ import datetime
 from agent import Agent
 from config import Mode
 from timeit import timeit
+import tensorflow as tf
 # import matplotlib.pyplot as plt
 
 # from pdb import set_trace
@@ -14,6 +15,8 @@ def run_experiment(args):
     :return: lists of average returns and mean Q values
     """
     global resultDir
+    train_writer = tf.train.SummaryWriter(args["log_dir"])
+
     resultDir = args["save_results_dir"]
     agent = Agent(algorithm=args["algorithm"],
                   discount=args["discount"],
@@ -75,7 +78,7 @@ def run_experiment(args):
             actions, action_idxs, mean_Q = agent.predict()
             for action, action_idx in zip(actions, action_idxs):
                 action_idx = int(action_idx)
-                print action
+                # print action
                 next_state, reward, game_over = agent.step(action, action_idx)
                 agent.store_next_state(next_state, reward, game_over, action_idx)
                 steps += 1
@@ -103,6 +106,23 @@ def run_experiment(args):
 
         returns_over_all_episodes += [average_return]
         mean_q_over_all_episodes += [average_mean_q]
+
+        # add to tensorboard summary
+        summary = tf.Summary()
+        summary_value = summary.value.add()
+        summary_value.simple_value = average_mean_q
+        summary_value.tag = 'q'
+        train_writer.add_summary(summary, i)
+
+        summary = tf.Summary()
+        summary_value = summary.value.add()
+        summary_value.simple_value = average_return
+        summary_value.tag = 'reward'
+        train_writer.add_summary(summary, i)
+
+        train_writer.flush()
+
+
 
         print("")
         print(str(datetime.datetime.now()))
