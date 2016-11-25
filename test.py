@@ -5,8 +5,8 @@ from config import *
 result_dir = "/media/arpit/datadisk/private/10701/project/results/"
 train_param = {
             "snapshot_episodes": 100,
-            "episodes": 10,
-            "steps_per_episode": 100, # 700 for deathmatch, 300 for health gathering
+            "episodes": 100,
+            "steps_per_episode": 4300, # 4300 for deathmatch, 300 for health gathering
             "average_over_num_episodes": 50,
             "start_learning_after": 20,
             "algorithm": Algorithm.DDQN,
@@ -15,8 +15,9 @@ train_param = {
             "prioritized_experience": False,
             "exploration_policy": ExplorationPolicy.E_GREEDY,
             "learning_rate": 2.5e-4,
-            "level": Level.HEALTH,        # change to the desired env
-            "combine_actions": True,      # False only for Deathmatch
+            "level": Level.DEATHMATCH,        # change to the desired env
+            "combine_actions": False,      # False only for Deathmatch
+
             "temperature": 10,
             "batch_size": 32,
             "history_length": 4,
@@ -32,7 +33,7 @@ train_param = {
             "architecture": Architecture.DIRECT,
             "max_action_sequence_length": 1,
             "save_results_dir": result_dir,
-            "visible":True,
+            "visible":False,
             "save_ERM":"./"
         }
 
@@ -43,14 +44,15 @@ train_param = {
 returns, Qs = run_experiment(train_param)
 
 # plot results
-# import matplotlib.pyplot as plt
 
-# plt.figure(1)
-# plt.plot(range(len(returns)), returns)
-# plt.savefig('av_return_10k.png')
-# plt.xlabel("episode")
-# plt.ylabel("average return")
-# plt.title("Average Return")
+import matplotlib.pyplot as plt
+
+plt.figure(1)
+plt.plot(range(len(returns)), returns)
+plt.xlabel("episode")
+plt.ylabel("average return")
+plt.title("Average Return")
+plt.savefig(result_dir + 'exp11/test_av_return_10k.png')
 
 # plt.figure(2)
 # plt.plot(range(len(Qs)), Qs)
@@ -58,5 +60,6 @@ returns, Qs = run_experiment(train_param)
 # plt.xlabel("episode")
 # plt.ylabel("mean Q value")
 # plt.title("Mean Q Value")
+
 
 # plt.show()
