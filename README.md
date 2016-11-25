@@ -14,3 +14,7 @@ Defend the center
 Death Match 
 ![weights](http://i.imgur.com/CmDSdtK.gif)
 ![Transitions](http://i.imgur.com/BtZmCqv.gif)
+
+### Usage
+1. To visualize the output from conv layers look into agent.py
+2. to run an experiment make a copy of train_<env_name>.py 

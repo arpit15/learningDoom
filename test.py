@@ -17,10 +17,11 @@ train_param = {
             "learning_rate": 2.5e-4,
             "level": Level.DEATHMATCH,        # change to the desired env
             "combine_actions": False,      # False only for Deathmatch
+
             "temperature": 10,
-            "batch_size": 10,
+            "batch_size": 32,
             "history_length": 4,
-            "snapshot": result_dir + 'exp11/models/model_900.h5',         # h5 model file name
+            "snapshot":'exp8_5000.h5',         # h5 model file name
             "snapshot_itr_num": 10000,
             "mode": Mode.DISPLAY,
             "skipped_frames": 4,
@@ -43,6 +44,7 @@ train_param = {
 returns, Qs = run_experiment(train_param)
 
 # plot results
+
 import matplotlib.pyplot as plt
 
 plt.figure(1)
@@ -59,4 +61,5 @@ plt.savefig(result_dir + 'exp11/test_av_return_10k.png')
 # plt.ylabel("mean Q value")
 # plt.title("Mean Q Value")
 
-plt.show()
+
+# plt.show()
