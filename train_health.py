@@ -1,13 +1,10 @@
 from RestrictedEnvironment import Level
 from run import run_experiment
 from config import *
-<<<<<<< HEAD
 
 resultDir = "/media/arpit/datadisk/private/10701/project/results/exp8/"
-=======
-import matplotlib.pyplot as plt
 
->>>>>>> bc5195b397a76b59be4d2f0bc9f12115e4fbe61c
+import matplotlib.pyplot as plt
 train_param = {
             "snapshot_episodes": 100,
             "episodes": 10000,
@@ -36,15 +33,10 @@ train_param = {
             "epsilon_annealing_steps": 3e4,
             "architecture": Architecture.DIRECT,
             "max_action_sequence_length": 1,
-<<<<<<< HEAD
             "log_dir":"../",
             "visible":False,
-            "save_results_dir":'../' 
-=======
-            "save_results_dir": "/media/arpit/datadisk/private/10701/project/results/exp13/",
-            "visible":False,
+            "save_results_dir":'../', 
             "save_ERM":"./"
->>>>>>> bc5195b397a76b59be4d2f0bc9f12115e4fbe61c
         }
 
 
