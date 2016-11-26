@@ -15,7 +15,9 @@ def run_experiment(args):
     :return: lists of average returns and mean Q values
     """
     global resultDir
-    train_writer = tf.train.SummaryWriter(args["log_dir"])
+    if "log_dir" in args:
+        do_logging = True
+        train_writer = tf.train.SummaryWriter(args["log_dir"]+"summary/")
 
     resultDir = args["save_results_dir"]
     agent = Agent(algorithm=args["algorithm"],
@@ -53,20 +55,6 @@ def run_experiment(args):
     mean_q_buffer = []
     
     start_time = timeit()
-    
-    #plotting init
-    # plt.ion()
-    # f, axarr = plt.subplots(2, sharex=True)
-    # plt.xlim([1,args["episodes"]])
-    # axarr[0].set_title("Training performance")
-    # axarr[0].set_ylabel('Average Return')
-    # axarr[0].set_xlabel("episode")
-    # axarr[1].set_ylabel('Average Q value')
-    # axarr[1].set_xlabel("episode")
-    # plt.draw()
-    # plt.savefig('alldone.png', dpi=300)
-    # set_trace()
-    # axarr[0].plot(range(10000), range(10000))
 
     for i in range(args["episodes"]):
         
@@ -107,20 +95,26 @@ def run_experiment(args):
         returns_over_all_episodes += [average_return]
         mean_q_over_all_episodes += [average_mean_q]
 
+        
         # add to tensorboard summary
         summary = tf.Summary()
         summary_value = summary.value.add()
         summary_value.simple_value = average_mean_q
         summary_value.tag = 'q'
-        train_writer.add_summary(summary, i)
+        train_writer.add_summary(summary, i+1)
 
         summary = tf.Summary()
         summary_value = summary.value.add()
         summary_value.simple_value = average_return
         summary_value.tag = 'reward'
-        train_writer.add_summary(summary, i)
+        train_writer.add_summary(summary, i+1)
 
-        train_writer.flush()
+        # flush to memory
+        if do_logging and ((i+1)%args["log_after_episodes"] == 0):
+            train_writer.flush()
+
+
+            
 
 
 
@@ -132,7 +126,7 @@ def run_experiment(args):
         
         # save snapshot of target network
         if args["mode"] == Mode.TRAIN and i % args["snapshot_episodes"] == args["snapshot_episodes"] - 1:
-            snapshot = 'model_' + str(i + 1 + args["snapshot_itr_num"]) + '.h5'
+            snapshot = 'models/model_' + str(i + 1 + args["snapshot_itr_num"]) + '.h5'
             snapshot = resultDir + snapshot
             print(str(datetime.datetime.now()) + " >> saving snapshot to " + snapshot)
             agent.target_network.save_weights(snapshot, overwrite=True)
