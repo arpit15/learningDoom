@@ -2,7 +2,11 @@ from RestrictedEnvironment import Level
 from run import run_experiment
 from config import *
 
+
 resultDir = "/media/arpit/datadisk/private/10701/project/results/exp13/"
+
+import matplotlib.pyplot as plt
+
 train_param = {
             "snapshot_episodes": 1000,
             "episodes": 10000,

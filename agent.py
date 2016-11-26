@@ -21,6 +21,11 @@ from RestrictedEnvironment import Environment
 from config import *
 from ERM import *
 
+# preprocessing
+from vgg_feat import VGG16
+from imagenet_utils import preprocess_input as imagenet_preprocess
+from keras.preprocessing import image
+
 import sys
 sys.dont_write_bytecode = True
 
@@ -53,6 +58,10 @@ class Agent(object):
         self.temperature = temperature
 
         self.policy = exploration_policy
+
+        # preprocessing
+        self.preprocess_model = VGG16()
+
 
         # initialization
         self.environment = Environment(level=level, combine_actions=combine_actions, visible=visible)
@@ -216,14 +225,14 @@ class Agent(object):
                 print("Built a sequential DQN")
                 model = Sequential()
                 # print self.history_length, self.state_height, self.state_width
-                # model.add(Convolution2D(16, 3, 3, subsample=(2,2), activation='relu', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
-                # model.add(Convolution2D(32, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True))
-                # model.add(Convolution2D(64, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True))
-                # model.add(Convolution2D(128, 3, 3, subsample=(1,1), activation='relu', init='uniform'))
-                # model.add(Convolution2D(256, 3, 3, subsample=(1,1), activation='relu', init='uniform'))
+                model.add(Convolution2D(16, 3, 3, subsample=(2,2), activation='relu', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
+                model.add(Convolution2D(32, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True))
+                model.add(Convolution2D(64, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True))
+                model.add(Convolution2D(128, 3, 3, subsample=(1,1), activation='relu', init='uniform'))
+                model.add(Convolution2D(256, 3, 3, subsample=(1,1), activation='relu', init='uniform'))
                 
-                model.add(Convolution2D(16, 8, 8, subsample=(4,4), activation='relu', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
-                model.add(Convolution2D(32, 4, 4, subsample=(2,2), activation='relu', init='uniform', trainable=True))
+                # model.add(Convolution2D(16, 8, 8, subsample=(4,4), activation='relu', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
+                # model.add(Convolution2D(32, 4, 4, subsample=(2,2), activation='relu', init='uniform', trainable=True))
                 
                 model.add(Flatten())
                 model.add(Dense(512, activation='relu', init='uniform'))
@@ -338,14 +347,22 @@ class Agent(object):
 
         return model
 
+    
+    def get_vgg_feat(self, state):
+        x = scipy.misc.imresize(state, size=(224, 224))
+        x = image.img_to_array(x)
+        x = np.expand_dims(x, axis=0)
+        x = imagenet_preprocess(x)
+        pred = self.preprocess_model.predict(x)
+        return np.squeeze(pred[0,0,:,:])
+
     def preprocess(self, state):
-        # print state.shape
-        # set_trace()
         # resize image and convert to greyscale
         if self.scale == 1:
             return np.mean(state,0)
         else:
-            state = scipy.misc.imresize(np.mean(state,2), self.scale)
+            state_vgg = self.get_vgg_feat(state)
+            state = scipy.misc.imresize(state_vgg, (self.state_height, self.state_width))
             #state = np.lib.pad(state, ((6, 6), (0, 0)), 'constant', constant_values=(0)) #TODO: remove comment
             return state
 
