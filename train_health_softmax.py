@@ -3,22 +3,23 @@ from run import run_experiment
 from config import *
 import matplotlib.pyplot as plt
 
+resultDir = "/media/arpit/datadisk/private/10701/project/results/exp13/"
 train_param = {
-            "snapshot_episodes": 100,
+            "snapshot_episodes": 1000,
             "episodes": 10000,
-            "steps_per_episode": 100, # 4300 for deathmatch, 300 for health gathering
+            "steps_per_episode": 200, # 4300 for deathmatch, 300 for health gathering
             "average_over_num_episodes": 50,
             "start_learning_after": 20,
             "algorithm": Algorithm.DDQN,
             "discount": 0.99,
-            "max_memory": 5000,
+            "max_memory": 10000,
             "prioritized_experience": False,
             "exploration_policy": ExplorationPolicy.SOFTMAX,
             "learning_rate": 2.5e-4,
             "level": Level.HEALTH,
             "combine_actions": False,
             "temperature": 10,
-            "batch_size": 32,
+            "batch_size": 64,
             "history_length": 4,
             "snapshot": '',
             "snapshot_itr_num": 0,
@@ -28,12 +29,14 @@ train_param = {
             "steps_between_train": 1,
             "epsilon_start": 0.5,
             "epsilon_end": 0.01,
-            "epsilon_annealing_steps": 3e4,   # change to 1e4
+            "epsilon_annealing_steps": 3e4,
             "architecture": Architecture.DIRECT,
             "max_action_sequence_length": 1,
-            "save_results_dir": "/media/arpit/datadisk/private/10701/project/results/exp14/",
+            "log_dir":resultDir,
             "visible":False,
-            "save_ERM":"./"
+            "save_results_dir": resultDir,
+            "visible":False,
+            "save_ERM":""
         }
 
 

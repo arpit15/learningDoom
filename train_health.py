@@ -2,18 +2,20 @@ from RestrictedEnvironment import Level
 from run import run_experiment
 from config import *
 
-resultDir = "/media/arpit/datadisk/private/10701/project/results/exp8/"
+
+resultDir = "/media/arpit/datadisk/private/10701/project/results/exp13/"
 
 import matplotlib.pyplot as plt
+
 train_param = {
-            "snapshot_episodes": 100,
+            "snapshot_episodes": 1000,
             "episodes": 10000,
-            "steps_per_episode": 100, # 4300 for deathmatch, 300 for health gathering
+            "steps_per_episode": 200, # 4300 for deathmatch, 300 for health gathering
             "average_over_num_episodes": 50,
             "start_learning_after": 20,
             "algorithm": Algorithm.DDQN,
             "discount": 0.99,
-            "max_memory": 5000,
+            "max_memory": 10000,
             "prioritized_experience": False,
             "exploration_policy": ExplorationPolicy.E_GREEDY,
             "learning_rate": 2.5e-4,
@@ -33,10 +35,12 @@ train_param = {
             "epsilon_annealing_steps": 3e4,
             "architecture": Architecture.DIRECT,
             "max_action_sequence_length": 1,
-            "log_dir":"../",
+            "log_dir":resultDir,
+            "log_after_episodes":10,
             "visible":False,
-            "save_results_dir":'../', 
-            "save_ERM":"./"
+            "save_results_dir": resultDir,
+            "visible":False,
+            "save_ERM":""
         }
 
 
