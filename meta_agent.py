@@ -17,7 +17,7 @@ import itertools as it
 
 # from enum import Enum
 
-from RestrictedEnvironment import Environment
+from agent import Agent
 from config import *
 from ERM import *
 
@@ -36,9 +36,9 @@ resultDir = "/media/arpit/datadisk/private/10701/project/results/"
 image_height, image_width = 60, 80 #TODO: change to 72
 merged_model = []
 
-class Agent(object):
+class MetaAgent(object):
     def __init__(self, discount, level, algorithm, prioritized_experience, max_memory, exploration_policy,
-                 learning_rate, history_length, batch_size, combine_actions, target_update_freq, epsilon_start, epsilon_end,
+                 learning_rate, history_length, batch_size, target_update_freq, epsilon_start, epsilon_end,
                  epsilon_annealing_steps, temperature=10, snapshot='', train=True, visible=True, skipped_frames=4,
                  architecture=Architecture.DIRECT, max_action_sequence_length=1):
 
@@ -64,7 +64,7 @@ class Agent(object):
 
 
         # initialization
-        self.environment = Environment(level=level, combine_actions=combine_actions, visible=visible)
+        self.agent = []
         self.memory = ExperienceReplay(max_memory=max_memory, prioritized=prioritized_experience, store_episodes=(max_action_sequence_length>1))
         self.preprocessed_curr = []
         self.win_count = 0
@@ -72,11 +72,11 @@ class Agent(object):
 
         self.state_width = image_width
         self.state_height = image_height
-        self.scale = self.state_width / float(self.environment.screen_width)
+        self.scale = self.state_width / float(self.agent[0].environment.screen_width)
 
         # recurrent
         self.max_action_sequence_length = max_action_sequence_length
-        self.num_actions = len(self.environment.actions)
+        self.num_actions = len(self.agent[0].environment.actions)
         self.input_action_space_size = self.num_actions + 2 # number of actions + start and end (padding) tokens
         self.output_action_space_size = self.num_actions
         self.start_token = self.num_actions
@@ -104,99 +104,7 @@ class Agent(object):
             self.online_network.load_weights(snapshot)
             self.target_network.compile(adam(lr=self.learning_rate), "mse")
             self.online_network.compile(adam(lr=self.learning_rate), "mse")
-        """
-        self.target_network, self.state_encoder, self.target_state_decoder = self.autoencoder()
-        self.online_network, _, self.online_state_decoder = self.autoencoder()
-        self.state_encoder.load_weights('state_encoder_model_8000.h5')
-        self.state_encoder.compile(adam(lr=5e-4), "mse")
-        self.predictor = self.predictor_model()
-        self.predictor.load_weights('predictor_model_5000.h5')
-        self.predictor.compile(adam(lr=5e-4), "mse")
-        """
-        #TODO: remove commment
-
-    def predictor_model(self):
-        input = Input(shape=(200,))
-
-        x = Dense(200, activation='relu')(input)
-
-        encoded_state = Dense(200, activation='relu')(x)
-
-        # action encoder
-        action = Input(shape=(3,))
-        x = Dense(input_dim=3, output_dim=8, activation='relu')(action)
-        encoded_action = Dense(8, activation='relu')(x)
-
-        x = merge([encoded_state, encoded_action], mode='concat')
-
-        x = Dense(200)(x)
-
-        x = ELU()(x)
-
-        x = Dense(200)(x)
-
-        next_state = ELU()(x)
-
-        predictor = Model(input=[input, action], output=next_state)
-
-        predictor.compile(optimizer=adam(lr=5e-4), loss='mse')
-
-        return predictor
-
-    def autoencoder(self):
-        a = 1.0
-        input_img = Input(shape=(self.history_length, 72, 80))
-
-        # state encoder
-        x = Convolution2D(16, 3, 3, subsample=(2, 2), border_mode='same', trainable=False)(input_img)
-        x = ELU(a)(x)
-        # x = BatchNormalization(mode=2)(x)
-        x = Convolution2D(32, 3, 3, subsample=(2, 2), border_mode='same', trainable=False)(x)
-        x = ELU(a)(x)
-        # x = BatchNormalization(mode=2)(x)
-        x = Convolution2D(64, 3, 3, subsample=(2, 2), border_mode='same', trainable=False)(x)
-        x = ELU(a)(x)
-        # x = BatchNormalization(mode=2)(x)
-        x = Flatten()(x)
-        encoded_state = Dense(200, trainable=False)(x)
-        encoded_state = ELU(a)(encoded_state)
-        # encoded_state = Lambda(lambda a: K.greater(a, K.zeros_like(a)), output_shape=(32,))(encoded_state)
-        state_encoder = Model(input=input_img, output=encoded_state)
-
-        input_encoded_state = Input(shape=(200,))
-
-        state_value = Dense(256, activation='relu', init='uniform')
-        _state_value = state_value(encoded_state)
-        __state_value = state_value(input_encoded_state)
-        state_value = Dense(1, init='uniform')
-        _state_value = state_value(_state_value)
-        __state_value = state_value(__state_value)
-        state_value = Lambda(lambda s: K.expand_dims(s[:, 0], dim=-1),
-                             output_shape=(len(self.environment.actions),))
-        _state_value = state_value(_state_value)
-        __state_value = state_value(__state_value)
-
-        # action advantage tower - A
-        action_advantage = Dense(256, activation='relu', init='uniform')
-        _action_advantage = action_advantage(encoded_state)
-        __action_advantage = action_advantage(input_encoded_state)
-        action_advantage = Dense(len(self.environment.actions), init='uniform')
-        _action_advantage = action_advantage(_action_advantage)
-        __action_advantage = action_advantage(__action_advantage)
-        action_advantage = Lambda(lambda a: a[:, :] - K.mean(a[:, :], keepdims=True),
-                                  output_shape=(len(self.environment.actions),))
-        _action_advantage = action_advantage(_action_advantage)
-        __action_advantage = action_advantage(__action_advantage)
-
-        # merge to state-action value function Q
-        state_action_value = merge([_state_value, _action_advantage], mode='sum')
-        __state_action_value = merge([__state_value, __action_advantage], mode='sum')
-        model = Model(input=input_img, output=state_action_value)
-        model.compile(rmsprop(lr=self.learning_rate), "mse")
-        model_decoder = Model(input=input_encoded_state, output=__state_action_value)
-        model_decoder.compile(rmsprop(lr=self.learning_rate), "mse")
-
-        return model, state_encoder, model_decoder
+        
 
     def create_network(self, architecture=Architecture.DIRECT, algorithm=Algorithm.DDQN):
         if algorithm == Algorithm.DRQN:
@@ -217,41 +125,25 @@ class Agent(object):
                 output1 = merge([tower_1, tower_2, tower_3], mode='concat', concat_axis=1)
                 avgpool = AveragePooling2D((7, 7), strides=(8, 8))(output1)
                 flatten = Flatten()(avgpool)
-                output = Dense(len(self.environment.actions))(flatten)
+                output = Dense(len(self.num_actions))(flatten)
                 model = Model(input=input_img, output=output)
                 model.compile(rmsprop(lr=self.learning_rate), "mse")
                 #model.summary()
             elif network_type == "sequential":
                 print("Built a sequential DQN")
                 model = Sequential()
-                # print self.history_length, self.state_height, self.state_width
-                # model.add(Convolution2D(16, 3, 3, subsample=(2,2), activation='relu', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
-                # model.add(Convolution2D(32, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True))
-                # model.add(Convolution2D(64, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True))
-                # model.add(Convolution2D(128, 3, 3, subsample=(1,1), activation='relu', init='uniform'))
-                # model.add(Convolution2D(256, 3, 3, subsample=(1,1), activation='relu', init='uniform'))
-                
-                model.add(Convolution2D(16, 8, 8, subsample=(4,4), activation='relu', name='conv1_agent', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
-                model.add(Convolution2D(32, 4, 4, subsample=(2,2), activation='relu', init='conv2_agent', trainable=True))
+
+                model.add(Convolution2D(16, 8, 8, subsample=(4,4), activation='relu', name='conv1_meta_agent', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
+                model.add(Convolution2D(32, 4, 4, subsample=(2,2), activation='relu', init='conv2_meta_agent', trainable=True))
                 
                 model.add(Flatten())
-                model.add(Dense(512, activation='relu', name='FC1_agent', init='uniform'))
-                model.add(Dense(len(self.environment.actions),init='uniform'))
+                model.add(Dense(512, activation='relu', name='FC1_meta_agent', init='uniform'))
+                model.add(Dense(len(self.num_actions),init='uniform'))
 
                 model.compile(rmsprop(lr=self.learning_rate), "mse")
             elif network_type == "recurrent":
-                print("Built a recurrent DQN")
-                model = Sequential()
-                model.add(TimeDistributed(Convolution2D(16, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True),input_shape=(self.history_length, 1, self.state_height, self.state_width)))
-                model.add(TimeDistributed(Convolution2D(32, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True)))
-                model.add(TimeDistributed(Convolution2D(64, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True)))
-                model.add(TimeDistributed(Convolution2D(128, 3, 3, subsample=(1,1), activation='relu', init='uniform')))
-                model.add(TimeDistributed(Convolution2D(256, 3, 3, subsample=(1,1), activation='relu', init='uniform')))
-                model.add(TimeDistributed(Flatten()))
-                model.add(LSTM(512, activation='relu', init='uniform', unroll=True))
-                model.add(Dense(len(self.environment.actions),init='uniform'))
-                model.compile(rmsprop(lr=self.learning_rate), "mse")
-                #model.summary()
+                pass
+
         elif architecture == Architecture.DUELING:
             if network_type == "sequential":
                 print("Built a dueling sequential DQN")
@@ -267,11 +159,11 @@ class Agent(object):
                 # state value tower - V
                 state_value = Dense(256, activation='relu', init='uniform')(x)
                 state_value = Dense(1, init='uniform')(state_value)
-                state_value = Lambda(lambda s: K.expand_dims(s[:, 0], dim=-1), output_shape=(len(self.environment.actions),))(state_value)
+                state_value = Lambda(lambda s: K.expand_dims(s[:, 0], dim=-1), output_shape=(len(self.num_actions),))(state_value)
                 # action advantage tower - A
                 action_advantage = Dense(256, activation='relu', init='uniform')(x)
-                action_advantage = Dense(len(self.environment.actions), init='uniform')(action_advantage)
-                action_advantage = Lambda(lambda a: a[:, :] - K.mean(a[:, :], keepdims=True), output_shape=(len(self.environment.actions),))(action_advantage)
+                action_advantage = Dense(len(self.num_actions), init='uniform')(action_advantage)
+                action_advantage = Lambda(lambda a: a[:, :] - K.mean(a[:, :], keepdims=True), output_shape=(len(self.num_actions),))(action_advantage)
                 # merge to state-action value function Q
                 state_action_value = merge([state_value, action_advantage], mode='sum')
                 model = Model(input=input, output=state_action_value)
@@ -281,70 +173,7 @@ class Agent(object):
                 print("ERROR: not implemented")
                 exit()
         elif architecture == Architecture.SEQUENCE:
-            print("Built a recurrent DQN")
-            """
-            state_model = Sequential()
-            state_model.add(Convolution2D(16, 3, 3, subsample=(2, 2), activation='relu',
-                                    input_shape=(self.history_length, self.state_height, self.state_width),
-                                    init='uniform', trainable=True))
-            state_model.add(Convolution2D(32, 3, 3, subsample=(2, 2), activation='relu', init='uniform', trainable=True))
-            state_model.add(Convolution2D(64, 3, 3, subsample=(2, 2), activation='relu', init='uniform', trainable=True))
-            state_model.add(Convolution2D(128, 3, 3, subsample=(1, 1), activation='relu', init='uniform'))
-            state_model.add(Convolution2D(256, 3, 3, subsample=(1, 1), activation='relu', init='uniform'))
-            state_model.add(Flatten())
-            state_model.add(Dense(512, activation='relu', init='uniform'))
-            state_model.add(RepeatVector(self.max_action_sequence_length))
-
-            action_model = Sequential()
-            action_model.add(Masking(mask_value=self.end_token, input_shape=(self.max_action_sequence_length,)))
-            action_model.add(Embedding(input_dim=self.input_action_space_size, output_dim=100, init='uniform', input_length=self.max_action_sequence_length))
-            action_model.add(TimeDistributed(Dense(100, init='uniform', activation='relu')))
-
-            model = Sequential()
-            model.add(Merge([state_model, action_model], mode='concat', concat_axis=-1))
-            model.add(LSTM(512, return_sequences=True, activation='relu', init='uniform'))
-            model.add(TimeDistributed(Dense(len(self.environment.actions), init='uniform')))
-            model.compile(rmsprop(lr=self.learning_rate), "mse")
-            model.summary()
-            """
-            state_model_input = Input(shape=(self.history_length, self.state_height, self.state_width))
-            state_model = Convolution2D(16, 3, 3, subsample=(2, 2), activation='relu',
-                                          input_shape=(self.history_length, self.state_height, self.state_width),
-                                          init='uniform', trainable=True)(state_model_input)
-            state_model = Convolution2D(32, 3, 3, subsample=(2, 2), activation='relu', init='uniform', trainable=True)(state_model)
-            state_model = Convolution2D(64, 3, 3, subsample=(2, 2), activation='relu', init='uniform', trainable=True)(state_model)
-            state_model = Convolution2D(128, 3, 3, subsample=(1, 1), activation='relu', init='uniform')(state_model)
-            state_model = Convolution2D(256, 3, 3, subsample=(1, 1), activation='relu', init='uniform')(state_model)
-            state_model = Flatten()(state_model)
-            state_model = Dense(512, activation='relu', init='uniform')(state_model)
-            state_model = RepeatVector(self.max_action_sequence_length)(state_model)
-
-            action_model_input = Input(shape=(self.max_action_sequence_length,))
-            action_model = Masking(mask_value=self.end_token, input_shape=(self.max_action_sequence_length,))(action_model_input)
-            action_model = Embedding(input_dim=self.input_action_space_size, output_dim=100, init='uniform',
-                                       input_length=self.max_action_sequence_length)(action_model)
-            action_model = TimeDistributed(Dense(100, init='uniform', activation='relu'))(action_model)
-
-            x = merge([state_model, action_model], mode='concat', concat_axis=-1)
-            x = LSTM(512, return_sequences=True, activation='relu', init='uniform')(x)
-
-            # state value tower - V
-            state_value = TimeDistributed(Dense(256, activation='relu', init='uniform'))(x)
-            state_value = TimeDistributed(Dense(1, init='uniform'))(state_value)
-            state_value = Lambda(lambda s: K.repeat_elements(s,rep=len(self.environment.actions),axis=2))(state_value)
-
-            # action advantage tower - A
-            action_advantage = TimeDistributed(Dense(256, activation='relu', init='uniform'))(x)
-            action_advantage = TimeDistributed(Dense(len(self.environment.actions), init='uniform'))(action_advantage)
-            action_advantage = TimeDistributed(Lambda(lambda a: a - K.mean(a, keepdims=True, axis=-1)))(action_advantage)
-
-            # merge to state-action value function Q
-            state_action_value = merge([state_value, action_advantage], mode='sum')
-
-            model = Model(input=[state_model_input, action_model_input], output=state_action_value)
-            model.compile(rmsprop(lr=self.learning_rate), "mse")
-            model.summary()
-
+            pass
         return model
 
     
@@ -366,78 +195,6 @@ class Agent(object):
             #state = np.lib.pad(state, ((6, 6), (0, 0)), 'constant', constant_values=(0)) #TODO: remove comment
             return state
 
-    def get_inputs_and_targets_for_sequence(self, minibatch):
-        """Given a minibatch, extract the inputs and targets for the training according to DQN or DDQN
-
-                :param minibatch: the minibatch to train on
-                :return: the inputs, targets and sample weights (for prioritized experience replay)
-                """
-        # if self.architecture == Architecture.SEQUENCE:
-        #    return self.get_inputs_and_targets_for_sequence(minibatch)
-
-        targets = list()
-        action_idxs = list()
-        inputs = list()
-        samples_weights = list()
-        for idx, transition_list, game_over, sample_weight in minibatch:
-
-            # choose random end transition from the episode
-            end_idx = np.random.randint(0, len(transition_list))
-            start_idx = max(0, end_idx - self.max_action_sequence_length + 1)
-
-            # there should be at least one chosen transition)
-            chosen_transitions = transition_list[start_idx:end_idx+1]
-            num_chosen_transitions = len(chosen_transitions)
-            first_transition = chosen_transitions[0]
-            last_transition = chosen_transitions[-1]
-
-            # relevant actions
-            chosen_actions = [transition.action for transition in chosen_transitions]
-            input_actions = [self.start_token] + chosen_actions[:-1]
-            # pad in the end if necessary
-            if len(input_actions) < self.max_action_sequence_length:
-                input_actions += [self.end_token] * (self.max_action_sequence_length - num_chosen_transitions)
-            actions_for_next_state = [self.start_token] + [self.end_token] * (self.max_action_sequence_length - 1)
-
-            # prepare input for predicting the current and next actions
-            curr_input = [first_transition.preprocessed_curr, np.array([input_actions])]
-            next_input = [last_transition.preprocessed_next, np.array([actions_for_next_state])]
-
-            action_idxs.append(input_actions)
-            inputs.append(curr_input[0][0])
-
-            # get the current action-values
-            target = self.online_network.predict(curr_input)[0]
-
-            # calculate TD-target for last transition
-            next_value = 0
-            if game_over and end_idx == len(transition_list)-1:
-                next_value = last_transition.reward
-            else:
-                if self.algorithm == Algorithm.DQN:
-                    Q_sa = self.target_network.predict(next_input)[0][0]
-                    next_value = np.max(Q_sa)
-
-                elif self.algorithm == Algorithm.DDQN:
-                    best_next_action = np.argmax(self.online_network.predict(next_input)[0][0])
-                    next_value = self.target_network.predict(next_input)[0][0][best_next_action]
-
-            current_index = min(self.max_action_sequence_length, num_chosen_transitions) - 1
-            for idx in range(current_index,-1,-1):
-                transition = chosen_transitions[idx]
-                TD_target = transition.reward + self.discount * next_value
-                TD_error = TD_target - target[idx][transition.action]
-                target[idx][transition.action] = TD_target
-
-            targets.append(target)
-
-            # updates priority and weight for prioritized experience replay
-            if self.memory.prioritized:
-                self.memory.update_transition_priority(idx, np.abs(TD_error))
-                samples_weights.append(sample_weight)
-
-        #print(action_idxs)
-        return np.array(inputs), np.array(targets), np.array(samples_weights), np.array(action_idxs)
 
     def get_inputs_and_targets(self, minibatch):
         """Given a minibatch, extract the inputs and targets for the training according to DQN or DDQN
@@ -537,7 +294,7 @@ class Agent(object):
         if coin_toss > self.epsilon:
             action_idx = np.argmax(Q)
         else:
-            action_idx = np.random.randint(len(self.environment.actions))
+            action_idx = np.random.randint(len(self.num_actions))
         action = self.environment.actions[action_idx]
 
         # anneal epsilon value
@@ -547,7 +304,7 @@ class Agent(object):
         return action, action_idx
 
     def get_action_according_to_exploration_policy(self, Q):
-        # action, action_idx = self.environment.actions[0], 0
+        
         if self.policy == ExplorationPolicy.E_GREEDY:
             action, action_idx = self.e_greedy(Q)
         elif self.policy == ExplorationPolicy.SHIFTED_MULTINOMIAL:
@@ -558,41 +315,6 @@ class Agent(object):
             print("Error: exploration policy not available")
             exit()
         return action, action_idx
-
-    def predict_sequence(self):
-        """predict action according to the current state
-
-        :return: the action, the action index, the mean Q value
-        """
-        # if no current state is present, create one by stacking the duplicated current state
-
-        if self.preprocessed_curr == []:
-            frame = self.environment.get_curr_state()
-            preprocessed_frame = self.preprocess(frame)
-            for t in range(self.history_length):
-                self.preprocessed_curr.append(preprocessed_frame)
-
-        # choose action
-        preprocessed_curr = np.reshape(self.preprocessed_curr, (1, self.history_length, self.state_height, self.state_width))
-
-        actions = []
-        action_idxs = []
-        # predict a single action
-        curr_idx = 1
-        input_actions = [self.start_token] + [self.end_token] * (self.max_action_sequence_length-1)
-        for idx in range(1,self.max_action_sequence_length+1):
-            Q = self.online_network.predict([preprocessed_curr, np.array([input_actions])], batch_size=1)[0]
-            action_value = Q[idx-1]
-            if idx > 1 and np.max(action_value) < last_max_Q:
-                break
-            last_max_Q = np.max(action_value)
-            action, action_idx = self.get_action_according_to_exploration_policy(action_value)
-            if idx < self.max_action_sequence_length:
-                input_actions[idx] = action_idx
-            actions += [action]
-            action_idxs += [action_idx]
-
-        return actions, action_idxs, np.max(Q) # send as a list of actions to conform with episodic experience replay
 
     def predict(self):
         """predict action according to the current state
@@ -628,9 +350,10 @@ class Agent(object):
         preprocessed_next = list(self.preprocessed_curr)
         del preprocessed_next[0]
         for t in range(self.skipped_frames):
-            frame, r, game_over = self.environment.step(action)
+            
+            frame, r, game_over = self.agent.step(action,action_idx)
             if self.visible:
-                self.environment.show()
+                self.agent.environment.show()
             reward += r # reward is accumulated
             if game_over:
                 break
@@ -640,7 +363,7 @@ class Agent(object):
         # episode finished
         if game_over:
             preprocessed_next = []
-            self.environment.new_episode()
+            self.agent[0].environment.new_episode()
             if reward > 0:
                 self.win_count += 1 # irrelevant to most levels
 
@@ -694,118 +417,4 @@ class Agent(object):
 
 
 if __name__ == "__main__":
-    from RestrictedEnvironment import Level
-    import numpy as np
-    params = {
-            "snapshot_episodes": 100,
-            "episodes": 5,
-            "steps_per_episode": 300, # 4300 for deathmatch, 300 for health gathering
-            "average_over_num_episodes": 50,
-            "start_learning_after": 20,
-            "algorithm": Algorithm.DDQN,
-            "discount": 0.99,
-            "max_memory": 50000,
-            "prioritized_experience": True,
-            "exploration_policy": ExplorationPolicy.E_GREEDY,
-            "learning_rate": 2.5e-4,
-            "level": Level.HEALTH,
-            "combine_actions": False,
-            "temperature": 10,
-            "batch_size": 32,
-            "history_length": 4,
-            "snapshot": 'exp8_5000.h5',#result_dir + 'model_20.h5',
-            "snapshot_itr_num": 0,
-            "mode": Mode.DISPLAY,
-            "skipped_frames": 4,
-            "target_update_freq": 1000,
-            "steps_between_train": 1,
-            "epsilon_start": 0.5,
-            "epsilon_end": 0.01,
-            "epsilon_annealing_steps": 3e4,
-            "architecture": Architecture.DIRECT,
-            "max_action_sequence_length": 1,
-            "save_results_dir": '',
-            "visible": True
-        }
-    agent = Agent(algorithm=params["algorithm"],
-                  discount=params["discount"],
-                  snapshot=params["snapshot"],
-                  max_memory=params["max_memory"],
-                  prioritized_experience=params["prioritized_experience"],
-                  exploration_policy=params["exploration_policy"],
-                  learning_rate=params["learning_rate"],
-                  level=params["level"],
-                  history_length=params["history_length"],
-                  batch_size=params["batch_size"],
-                  temperature=params["temperature"],
-                  combine_actions=params["combine_actions"],
-                  train=(params["mode"] == Mode.TRAIN),
-                  skipped_frames=params["skipped_frames"],
-                  target_update_freq=params["target_update_freq"],
-                  epsilon_start=params["epsilon_start"],
-                  epsilon_end=params["epsilon_end"],
-                  epsilon_annealing_steps=params["epsilon_annealing_steps"],
-                  architecture=params["architecture"],
-                  visible=params["visible"],
-                  max_action_sequence_length=params["max_action_sequence_length"])
-
-    model = agent.target_network
-    
-    #visualizing the conv filters
-    conv_layer = 5
-    for l in range(conv_layer):
-        l1 = model.layers[l].get_weights()
-        w1 = np.asarray(l1[0])
-        
-        f, axarr = plt.subplots(4,4)
-        for i in range(4):
-            for j in range(4):
-                axarr[i,j].imshow(np.squeeze(w1[i,j,:,:]), cmap='Greys_r')
-
-    #     plt.savefig("layer_" + str(l) + ".png", bbox_inches="tight")
-    set_trace()
-
-    #run for some steps
-    for i in range(80):
-        actions, action_idxs, mean_Q = agent.predict()
-        for action, action_idx in zip(actions, action_idxs):
-            action_idx = int(action_idx)
-            next_state, reward, game_over = agent.step(action, action_idx)
-            agent.environment.show()
-
-    #visualizing the output of the conv filters
-    agent.predict()
-    preprocessed_curr = np.reshape(agent.preprocessed_curr, (1, agent.history_length, agent.state_height, agent.state_width))
-    input_image = np.copy(preprocessed_curr)
-    input_image = input_image.astype(np.float32)
-    f, axarr = plt.subplots(1,4)
-    
-    # plotting input image
-    for j in range(4):
-       axarr[j].imshow(np.squeeze(input_image[0,j,:,:]), cmap='Greys_r')
-       axarr[j].set_axis_off()
-    plt.show()
-
-    # plotting conv layer output
-    for l in range(conv_layer):
-        get_lth_layer_output = K.function([model.layers[l].input],
-                                  [model.layers[l].output])
-    
-        layer_output = get_lth_layer_output([input_image,0])[0]
-        out = np.squeeze(layer_output)
-        # set_trace()
-        m = int(min(4,layer_output.shape[1]/4.0))
-        f, axarr = plt.subplots(4,m)
-        
-        for i in range(4):
-            for j in range(4):
-                axarr[i,j].set_axis_off()
-                axarr[i,j].imshow(np.squeeze(out[i+j*4,:,:]), cmap='Greys_r')
-
-        plt.savefig("layer_output_" + str(l) + ".png", bbox_inches="tight")
-
-        input_image = np.copy(layer_output)
-
-
-
-    
+    pass
