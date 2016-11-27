@@ -6,8 +6,8 @@ from config import *
 result_dir = "../"
 train_param = {
             "snapshot_episodes": 100,
-            "episodes": 100,
-            "steps_per_episode": 700, # 4300 for deathmatch, 300 for health gathering
+            "episodes": 10,
+            "steps_per_episode": 200, # 4300 for deathmatch, 300 for health gathering
             "average_over_num_episodes": 50,
             "start_learning_after": 20,
             "algorithm": Algorithm.DDQN,
@@ -16,12 +16,12 @@ train_param = {
             "prioritized_experience": False,
             "exploration_policy": ExplorationPolicy.E_GREEDY,
             "learning_rate": 2.5e-4,
-            "level": Level.DEATHMATCH,        # change to the desired env
-            "combine_actions": True,      # False only for Deathmatch
+            "level": Level.HEALTH,        # change to the desired env
+            "combine_actions": False,      # False only for Deathmatch
             "temperature": 10,
             "batch_size": 32,
             "history_length": 4,
-            "snapshot":'exp8_5000.h5',         # h5 model file name
+            "snapshot":'exp13_3000.h5',         # h5 model file name
             "snapshot_itr_num": 10000,
             "mode": Mode.DISPLAY,
             "skipped_frames": 4,

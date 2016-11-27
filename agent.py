@@ -225,17 +225,17 @@ class Agent(object):
                 print("Built a sequential DQN")
                 model = Sequential()
                 # print self.history_length, self.state_height, self.state_width
-                model.add(Convolution2D(16, 3, 3, subsample=(2,2), activation='relu', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
-                model.add(Convolution2D(32, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True))
-                model.add(Convolution2D(64, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True))
-                model.add(Convolution2D(128, 3, 3, subsample=(1,1), activation='relu', init='uniform'))
-                model.add(Convolution2D(256, 3, 3, subsample=(1,1), activation='relu', init='uniform'))
+                # model.add(Convolution2D(16, 3, 3, subsample=(2,2), activation='relu', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
+                # model.add(Convolution2D(32, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True))
+                # model.add(Convolution2D(64, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True))
+                # model.add(Convolution2D(128, 3, 3, subsample=(1,1), activation='relu', init='uniform'))
+                # model.add(Convolution2D(256, 3, 3, subsample=(1,1), activation='relu', init='uniform'))
                 
-                # model.add(Convolution2D(16, 8, 8, subsample=(4,4), activation='relu', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
-                # model.add(Convolution2D(32, 4, 4, subsample=(2,2), activation='relu', init='uniform', trainable=True))
+                model.add(Convolution2D(16, 8, 8, subsample=(4,4), activation='relu', name='conv1_agent', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
+                model.add(Convolution2D(32, 4, 4, subsample=(2,2), activation='relu', init='conv2_agent', trainable=True))
                 
                 model.add(Flatten())
-                model.add(Dense(512, activation='relu', init='uniform'))
+                model.add(Dense(512, activation='relu', name='FC1_agent', init='uniform'))
                 model.add(Dense(len(self.environment.actions),init='uniform'))
 
                 model.compile(rmsprop(lr=self.learning_rate), "mse")
