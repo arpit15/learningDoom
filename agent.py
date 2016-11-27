@@ -61,7 +61,9 @@ class Agent(object):
 
         # preprocessing
         self.preprocess_model = VGG16()
-
+        self.vgg_feat_num = 512
+        self.vgg_feat_shape = 7
+        self.use_vgg = True
 
         # initialization
         self.environment = Environment(level=level, combine_actions=combine_actions, visible=visible)
@@ -225,14 +227,16 @@ class Agent(object):
                 print("Built a sequential DQN")
                 model = Sequential()
                 # print self.history_length, self.state_height, self.state_width
-                # model.add(Convolution2D(16, 3, 3, subsample=(2,2), activation='relu', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
-                # model.add(Convolution2D(32, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True))
-                # model.add(Convolution2D(64, 3, 3, subsample=(2,2), activation='relu', init='uniform', trainable=True))
-                # model.add(Convolution2D(128, 3, 3, subsample=(1,1), activation='relu', init='uniform'))
-                # model.add(Convolution2D(256, 3, 3, subsample=(1,1), activation='relu', init='uniform'))
+                if self.use_vgg
+                    model.add(Convolution2D(16, 3, 3, subsample=(2,2), activation='relu', name='conv1_agent', input_shape=(self.history_length*self.vgg_feat_num, self.vgg_feat_shape, self.vgg_feat_shape), init='uniform', trainable=True))
+                else:
+                    model.add(Convolution2D(16, 8, 8, subsample=(4,4), activation='relu', name='conv1_agent', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
                 
-                model.add(Convolution2D(16, 8, 8, subsample=(4,4), activation='relu', name='conv1_agent', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
-                model.add(Convolution2D(32, 4, 4, subsample=(2,2), activation='relu', init='conv2_agent', trainable=True))
+                model.add(Convolution2D(32, 3, 3, subsample=(2,2), activation='relu', name='conv2_agent', init='uniform', trainable=True))
+               
+                ## original DQN
+                # model.add(Convolution2D(16, 8, 8, subsample=(4,4), activation='relu', name='conv1_agent', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
+                # model.add(Convolution2D(32, 4, 4, subsample=(2,2), activation='relu', init='conv2_agent', trainable=True))
                 
                 model.add(Flatten())
                 model.add(Dense(512, activation='relu', name='FC1_agent', init='uniform'))
@@ -255,10 +259,17 @@ class Agent(object):
         elif architecture == Architecture.DUELING:
             if network_type == "sequential":
                 print("Built a dueling sequential DQN")
-                input = Input(shape=(self.history_length, self.state_height, self.state_width))
-                x = Convolution2D(16, 3, 3, subsample=(2, 2), activation='relu',
-                    input_shape=(self.history_length, image_height, image_width), init='uniform',
-                    trainable=True)(input)
+                
+                if self.use_vgg:
+                    input = Input(shape=(self.history_length*self.vgg_feat_num, self.vgg_feat_shape, self.vgg_feat_shape))
+                    x = Convolution2D(16, 3, 3, subsample=(2, 2), activation='relu',
+                        input_shape=(self.history_length*self.vgg_feat_num, self.vgg_feat_shape, self.vgg_feat_shape), init='uniform',
+                        trainable=True)(input)
+                else:
+                    input = Input(shape=(self.history_length, self.state_height, self.state_width))
+                    x = Convolution2D(16, 3, 3, subsample=(2, 2), activation='relu',
+                        input_shape=(self.history_length, image_height, image_width), init='uniform',
+                        trainable=True)(input)
                 x = Convolution2D(32, 3, 3, subsample=(2, 2), activation='relu', init='uniform', trainable=True)(x)
                 x = Convolution2D(64, 3, 3, subsample=(2, 2), activation='relu', init='uniform', trainable=True)(x)
                 x = Convolution2D(128, 3, 3, subsample=(1, 1), activation='relu', init='uniform')(x)
@@ -282,31 +293,7 @@ class Agent(object):
                 exit()
         elif architecture == Architecture.SEQUENCE:
             print("Built a recurrent DQN")
-            """
-            state_model = Sequential()
-            state_model.add(Convolution2D(16, 3, 3, subsample=(2, 2), activation='relu',
-                                    input_shape=(self.history_length, self.state_height, self.state_width),
-                                    init='uniform', trainable=True))
-            state_model.add(Convolution2D(32, 3, 3, subsample=(2, 2), activation='relu', init='uniform', trainable=True))
-            state_model.add(Convolution2D(64, 3, 3, subsample=(2, 2), activation='relu', init='uniform', trainable=True))
-            state_model.add(Convolution2D(128, 3, 3, subsample=(1, 1), activation='relu', init='uniform'))
-            state_model.add(Convolution2D(256, 3, 3, subsample=(1, 1), activation='relu', init='uniform'))
-            state_model.add(Flatten())
-            state_model.add(Dense(512, activation='relu', init='uniform'))
-            state_model.add(RepeatVector(self.max_action_sequence_length))
-
-            action_model = Sequential()
-            action_model.add(Masking(mask_value=self.end_token, input_shape=(self.max_action_sequence_length,)))
-            action_model.add(Embedding(input_dim=self.input_action_space_size, output_dim=100, init='uniform', input_length=self.max_action_sequence_length))
-            action_model.add(TimeDistributed(Dense(100, init='uniform', activation='relu')))
-
-            model = Sequential()
-            model.add(Merge([state_model, action_model], mode='concat', concat_axis=-1))
-            model.add(LSTM(512, return_sequences=True, activation='relu', init='uniform'))
-            model.add(TimeDistributed(Dense(len(self.environment.actions), init='uniform')))
-            model.compile(rmsprop(lr=self.learning_rate), "mse")
-            model.summary()
-            """
+            
             state_model_input = Input(shape=(self.history_length, self.state_height, self.state_width))
             state_model = Convolution2D(16, 3, 3, subsample=(2, 2), activation='relu',
                                           input_shape=(self.history_length, self.state_height, self.state_width),
@@ -354,16 +341,22 @@ class Agent(object):
         x = np.expand_dims(x, axis=0)
         x = imagenet_preprocess(x)
         pred = self.preprocess_model.predict(x)
-        return np.squeeze(pred[0,0,:,:])
+        # return np.squeeze(pred[0,0,:,:])
+        return pred
+
 
     def preprocess(self, state):
         # resize image and convert to greyscale
         if self.scale == 1:
             return np.mean(state,0)
         else:
-            state_vgg = self.get_vgg_feat(state)
-            state = scipy.misc.imresize(state_vgg, (self.state_height, self.state_width))
-            #state = np.lib.pad(state, ((6, 6), (0, 0)), 'constant', constant_values=(0)) #TODO: remove comment
+            if self.use_vgg:
+                # with vgg features
+                state = self.get_vgg_feat(state)
+            else:
+                # with scaling
+                state = scipy.misc.imresize(state, self.scale)
+
             return state
 
     def get_inputs_and_targets_for_sequence(self, minibatch):
@@ -450,6 +443,7 @@ class Agent(object):
 
         targets = list()
         action_idxs = list()
+        
         inputs = list()
         samples_weights = list()
         for idx, transition_list, game_over, sample_weight in minibatch:
@@ -486,7 +480,20 @@ class Agent(object):
                 self.memory.update_transition_priority(idx, np.abs(TD_error))
                 samples_weights.append(sample_weight)
 
-        return np.array(inputs), np.array(targets), np.array(samples_weights), np.array(action_idxs)
+        if not self.use_vgg:
+            return np.array(inputs), np.array(targets), np.array(samples_weights), np.array(action_idxs)
+            
+        else:
+            input_array = np.array(inputs)
+            target_array = np.array(targets)
+
+            input_shape = input_array.shape
+            
+            input_array = np.reshape(input_array,(input_shape[0]*input_shape[1], input_shape[2],input_shape[3]))
+            target_array = np.reshape(target_array,(input_shape[0]*input_shape[1], input_shape[2],input_shape[3]))
+            
+            return input_array, target_array, np.array(samples_weights), np.array(action_idxs)
+
 
     def softmax_selection(self, Q):
         """Select the action according to the softmax exploration policy
@@ -610,7 +617,12 @@ class Agent(object):
                 self.preprocessed_curr.append(preprocessed_frame)
 
         # choose action
-        preprocessed_curr = np.reshape(self.preprocessed_curr, (1, self.history_length, self.state_height, self.state_width))
+        if self.use_vgg:
+            preprocessed_curr = np.reshape(self.preprocessed_curr, (1, self.history_length*self.vgg_feat_num, self.vgg_feat_shape, self.vgg_feat_shape))
+        else:
+            preprocessed_curr = np.reshape(self.preprocessed_curr, (1, self.history_length, self.state_height, self.state_width))
+        
+        
         if self.algorithm == Algorithm.DRQN:
             # expand dims to have a time dimension + switch between depth and time
             preprocessed_curr = np.expand_dims(preprocessed_curr, axis=0).transpose(0,2,1,3,4)
