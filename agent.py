@@ -227,7 +227,7 @@ class Agent(object):
                 print("Built a sequential DQN")
                 model = Sequential()
                 # print self.history_length, self.state_height, self.state_width
-                if self.use_vgg
+                if self.use_vgg:
                     model.add(Convolution2D(16, 3, 3, subsample=(2,2), activation='relu', name='conv1_agent', input_shape=(self.history_length*self.vgg_feat_num, self.vgg_feat_shape, self.vgg_feat_shape), init='uniform', trainable=True))
                 else:
                     model.add(Convolution2D(16, 8, 8, subsample=(4,4), activation='relu', name='conv1_agent', input_shape=(self.history_length, self.state_height, self.state_width), init='uniform', trainable=True))
@@ -346,18 +346,21 @@ class Agent(object):
 
 
     def preprocess(self, state):
-        # resize image and convert to greyscale
-        if self.scale == 1:
-            return np.mean(state,0)
+        
+        #clipping the scoreboard as agent is not able to learn from it
+        state = state[:400,:,:]
+        if self.use_vgg:
+            # with vgg features
+            state = self.get_vgg_feat(state)
         else:
-            if self.use_vgg:
-                # with vgg features
-                state = self.get_vgg_feat(state)
+            # with scaling
+            if self.scale == 1:
+                return np.mean(state,0)
             else:
-                # with scaling
-                state = scipy.misc.imresize(state, self.scale)
-
-            return state
+                # set_trace()
+                state = scipy.misc.imresize(np.mean(state,2), self.scale)
+        # set_trace()
+        return state
 
     def get_inputs_and_targets_for_sequence(self, minibatch):
         """Given a minibatch, extract the inputs and targets for the training according to DQN or DDQN
@@ -480,19 +483,24 @@ class Agent(object):
                 self.memory.update_transition_priority(idx, np.abs(TD_error))
                 samples_weights.append(sample_weight)
 
-        if not self.use_vgg:
-            return np.array(inputs), np.array(targets), np.array(samples_weights), np.array(action_idxs)
-            
-        else:
-            input_array = np.array(inputs)
-            target_array = np.array(targets)
+        input_array = np.array(inputs)
+        target_array = np.array(targets)
 
-            input_shape = input_array.shape
+        return input_array, target_array, np.array(samples_weights), np.array(action_idxs)
+        # if not self.use_vgg:
+        #     set_trace()
             
-            input_array = np.reshape(input_array,(input_shape[0]*input_shape[1], input_shape[2],input_shape[3]))
-            target_array = np.reshape(target_array,(input_shape[0]*input_shape[1], input_shape[2],input_shape[3]))
             
-            return input_array, target_array, np.array(samples_weights), np.array(action_idxs)
+        # else:
+            
+        #     set_trace()
+        #     input_shape = input_array.shape
+        #     # target_shape = target_array.shape
+            
+        #     input_array = np.reshape(input_array,(input_shape[0]*input_shape[1], input_shape[2],input_shape[3]))
+        #     # target_array = np.reshape(target_array,(target_shape[0]*target_shape[1], target_shape[2],target_shape[3]))
+            
+        #     return input_array, target_array, np.array(samples_weights), np.array(action_idxs)
 
 
     def softmax_selection(self, Q):
@@ -620,6 +628,7 @@ class Agent(object):
         if self.use_vgg:
             preprocessed_curr = np.reshape(self.preprocessed_curr, (1, self.history_length*self.vgg_feat_num, self.vgg_feat_shape, self.vgg_feat_shape))
         else:
+            # set_trace()
             preprocessed_curr = np.reshape(self.preprocessed_curr, (1, self.history_length, self.state_height, self.state_width))
         
         
@@ -659,10 +668,17 @@ class Agent(object):
         return preprocessed_next, reward, game_over
 
     def store_next_state(self, preprocessed_next, reward, game_over, action_idx):
-        preprocessed_curr = np.reshape(self.preprocessed_curr, (1, self.history_length, image_height, image_width))
+        # set_trace()
+        if self.use_vgg:
+            preprocessed_curr = np.reshape(self.preprocessed_curr, (1, self.history_length*self.vgg_feat_num, self.vgg_feat_shape, self.vgg_feat_shape))    
+        else:
+            preprocessed_curr = np.reshape(self.preprocessed_curr, (1, self.history_length, image_height, image_width))
         self.preprocessed_curr = list(preprocessed_next) # saved as list
         if preprocessed_next != []:
-            preprocessed_next = np.reshape(preprocessed_next, (1, self.history_length, image_height, image_width))
+            if self.use_vgg:
+                preprocessed_next = np.reshape(preprocessed_next, (1, self.history_length*self.vgg_feat_num, self.vgg_feat_shape, self.vgg_feat_shape))
+            else:
+                preprocessed_next = np.reshape(preprocessed_next, (1, self.history_length, image_height, image_width))
 
         # store transition
         self.memory.remember(Transition(preprocessed_curr, action_idx, reward, preprocessed_next), game_over) # stored as np array

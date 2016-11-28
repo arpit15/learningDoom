@@ -2,8 +2,26 @@ import numpy as np
 import datetime
 from agent import Agent
 from config import Mode
-from timeit import timeit
+from time import time
 import tensorflow as tf
+
+import os
+import keras.backend.tensorflow_backend as KTF
+
+def get_session(gpu_fraction=0.25):
+    '''Assume that you have 6GB of GPU memory and want to allocate ~2GB'''
+
+    num_threads = os.environ.get('OMP_NUM_THREADS')
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=gpu_fraction)
+
+    if num_threads:
+        return tf.Session(config=tf.ConfigProto(
+            gpu_options=gpu_options, intra_op_parallelism_threads=num_threads))
+    else:
+        return tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+
+
+
 # import matplotlib.pyplot as plt
 
 # from pdb import set_trace
@@ -14,6 +32,7 @@ def run_experiment(args):
     :param args: a dictionary containing all the parameters for the run
     :return: lists of average returns and mean Q values
     """
+    KTF.set_session(get_session())
     global resultDir
     if "log_dir" in args:
         do_logging = True
@@ -41,6 +60,9 @@ def run_experiment(args):
                   architecture=args["architecture"],
                   visible=args["visible"],
                   max_action_sequence_length=args["max_action_sequence_length"])
+    
+    if args["load_ERM"]:
+        agent.memory = args["ERM"]
 
     if (args["mode"] == Mode.TEST or args["mode"] == Mode.DISPLAY) and args["snapshot"] == '':
         print("Warning: mode set to " + str(args["mode"]) + " but no snapshot was loaded")
@@ -54,10 +76,10 @@ def run_experiment(args):
     return_buffer = []
     mean_q_buffer = []
     
-    start_time = timeit()
+    
 
     for i in range(args["episodes"]):
-        
+        start_time = time()
         agent.environment.new_episode()
         steps, curr_return, curr_Qs, loss = 0, 0, 0, 0
         game_over = False
@@ -120,7 +142,7 @@ def run_experiment(args):
 
         print("")
         print(str(datetime.datetime.now()))
-        print("episode = " + str(i) + " steps = " + str(total_steps))
+        print("episode = " + str(i) + " steps = " + str(steps))
         print("epsilon = " + str(agent.epsilon) + " loss = " + str(loss))
         print("current_return = " + str(curr_return) + " average return = " + str(average_return))
         
@@ -140,7 +162,7 @@ def run_experiment(args):
         # plt.savefig('alldone.png', dpi=300)
 
 
-    print("time for this episode:"+str((timeit()-start_time)/args["episodes"]))
+        print("time for this episode:"+str((time()-start_time)))
     agent.environment.game.close()
 
     if args["save_ERM"] != '':
