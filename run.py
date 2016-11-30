@@ -1,6 +1,6 @@
 import numpy as np
 import datetime
-from agent import Agent
+from agent_rp import Agent
 from config import Mode
 from time import time
 import tensorflow as tf
@@ -34,6 +34,7 @@ def run_experiment(args):
     """
     KTF.set_session(get_session())
     global resultDir
+    do_logging = False
     if "log_dir" in args:
         do_logging = True
         train_writer = tf.train.SummaryWriter(args["log_dir"]+"summary/")
@@ -119,25 +120,22 @@ def run_experiment(args):
 
         
         # add to tensorboard summary
-        summary = tf.Summary()
-        summary_value = summary.value.add()
-        summary_value.simple_value = average_mean_q
-        summary_value.tag = 'q'
-        train_writer.add_summary(summary, i+1)
+        if do_logging:
+            summary = tf.Summary()
+            summary_value = summary.value.add()
+            summary_value.simple_value = average_mean_q
+            summary_value.tag = 'q'
+            train_writer.add_summary(summary, i+1)
 
-        summary = tf.Summary()
-        summary_value = summary.value.add()
-        summary_value.simple_value = average_return
-        summary_value.tag = 'reward'
-        train_writer.add_summary(summary, i+1)
+            summary = tf.Summary()
+            summary_value = summary.value.add()
+            summary_value.simple_value = average_return
+            summary_value.tag = 'reward'
+            train_writer.add_summary(summary, i+1)
 
         # flush to memory
         if do_logging and ((i+1)%args["log_after_episodes"] == 0):
             train_writer.flush()
-
-
-            
-
 
 
         print("")
@@ -154,21 +152,13 @@ def run_experiment(args):
             agent.target_network.save_weights(snapshot, overwrite=True)
 
 
-        #plotting
-        # print("plotting")
-        # axarr[0].plot(range(len(returns_over_all_episodes)), returns_over_all_episodes)
-        # axarr[1].plot(range(len(mean_q_over_all_episodes)), mean_q_over_all_episodes)
-        # plt.show()
-        # plt.savefig('alldone.png', dpi=300)
-
-
         print("time for this episode:"+str((time()-start_time)))
     agent.environment.game.close()
 
     if args["save_ERM"] != '':
         agent.memory.save(args["save_ERM"])    
         print 'saving ERM'
-    return returns_over_all_episodes, mean_q_over_all_episodes ,agent.memory
+    return returns_over_all_episodes, mean_q_over_all_episodes ,agent.memory_non_zero
 
 
 # if __name__ == "__main__":

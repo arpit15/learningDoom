@@ -1,15 +1,15 @@
 from RestrictedEnvironment import Level
-from run import run_experiment
+from run_rp import run_experiment
 from config import *
 # import matplotlib.pyplot as plt
 
 result_dir = "/media/arpit/datadisk/private/10701/project/results/exp13/"
 train_param = {
             "snapshot_episodes": 100,
-            "episodes": 2500,
+            "episodes": 10,
             "steps_per_episode": 700, # 700 for deathmatch, 300 for health gathering
             "average_over_num_episodes": 50,
-            "start_learning_after": 20,
+            "start_learning_after": 0,
             "algorithm": Algorithm.DDQN,
             "discount": 0.99,
             "max_memory": 50000,
@@ -19,7 +19,7 @@ train_param = {
             "level": Level.DEATHMATCH,
             "combine_actions": False,
             "temperature": 10,
-            "batch_size": 64,
+            "batch_size": 10,
             "history_length": 4,
             "snapshot": '',#result_dir + 'model_20.h5',
             "snapshot_itr_num": 0,
@@ -34,7 +34,9 @@ train_param = {
             "max_action_sequence_length": 1,
             "save_results_dir": result_dir,
             "visible": False,                   #to run the frame in normal mode and visualize
-            "save_ERM": ''                      # give path if want to store memory
+            "save_ERM": '',                      # give path if want to store memory
+            "load_ERM":False,
+            "ERM":None
         }
 
 

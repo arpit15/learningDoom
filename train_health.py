@@ -3,16 +3,17 @@ from run import run_experiment
 from config import *
 
 
-resultDir = "/media/arpit/datadisk/private/10701/project/results/exp14/"
+# resultDir = "/media/arpit/datadisk/private/10701/project/results/exp14/"
+resultDir = "./../"
 
 import matplotlib.pyplot as plt
 
 train_param = {
             "snapshot_episodes": 100,
-            "episodes": 2000,
+            "episodes": 10,
             "steps_per_episode": 200, # 4300 for deathmatch, 300 for health gathering
             "average_over_num_episodes": 50,
-            "start_learning_after": 50,
+            "start_learning_after": 0,
             "algorithm": Algorithm.DDQN,
             "discount": 0.99,
             "max_memory": 5000,
@@ -22,7 +23,7 @@ train_param = {
             "level": Level.HEALTH,
             "combine_actions": False,
             "temperature": 10,
-            "batch_size": 10,
+            "batch_size": 1,
             "history_length": 4,
             "snapshot": '',
             "snapshot_itr_num": 0,
